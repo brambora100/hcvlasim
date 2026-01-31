@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Časomíra</title>
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@700&display=swap" rel="stylesheet">
+
+<style>
+  *{
+    box-sizing:border-box;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 🔴 žádné pozadí */
+  body{
+    margin:0;
+    background:transparent;
+    color:#fff;
+  }
+
+  .wrapper{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    gap:14px;
+    padding:16px;
+  }
+
+  :root{ --SZ: 56px; }
+
+  .top{
+    width:min(980px, 100%);
+    display:grid;
+    grid-template-columns: 1fr 0.4fr 1fr;
+    text-align:center;
+    align-items:center;
+    font-size:var(--SZ);
+  }
+
+  .cell{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    white-space:nowrap;
+  }
+
+  #time{
+    min-width:6ch;
+  }
+
+  #state{ min-width:3ch; }
+  #score{ min-width:7ch; }
+
+  .penalties{
+    width:min(980px, 100%);
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:10px;
+    font-size:var(--SZ);
+    text-align:center;
+    align-items:center;
+    margin-top:6px;
+  }
+
+  .penTime{ min-width:4ch; }
+
+  .controls{
+    width:min(980px, 100%);
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+    margin-top:10px;
+  }
+
+  button{
+    background:rgba(0,0,0,0.4);
+    color:#fff;
+    border:2px solid #333;
+    padding:10px 14px;
+    font-size:16px;
+    cursor:pointer;
+  }
+  button:hover{ background:rgba(0,0,0,0.6); }
+
+  input{
+    background:rgba(0,0,0,0.4);
+    color:#fff;
+    border:2px solid #333;
+    padding:8px 10px;
+    font-size:16px;
+    width:170px;
+  }
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+  <!-- DISPLEJ -->
+  <div class="top">
+    <div class="cell" id="time"><span id="timeText">20:00</span></div>
+    <div class="cell" id="state">1</div>
+    <div class="cell" id="score">0 : 0</div>
+  </div>
+
+  <!-- TRESTY -->
+  <div class="penalties">
+    <div class="penTime" id="h1">0:00</div>
+    <div class="penTime" id="h2">0:00</div>
+    <div class="penTime" id="a1">0:00</div>
+    <div class="penTime" id="a2">0:00</div>
+  </div>
+
+  <!-- OVLÁDÁNÍ -->
+  <div class="controls">
+    <button onclick="toggle()">START / STOP</button>
+    <button onclick="resetAll()">RESET</button>
+    <button onclick="skipSegment()">DALŠÍ ÚSEK</button>
+
+    <button onclick="goal('h',1)">DOM +</button>
+    <button onclick="goal('h',-1)">DOM −</button>
+    <button onclick="goal('a',1)">HOS +</button>
+    <button onclick="goal('a',-1)">HOS −</button>
+
+    <input id="mainTimeInput" placeholder="čas M:SS nebo M:SS.d">
+    <button onclick="applyMainTime()">NASTAVIT ČAS</button>
+
+    <input id="penTimeInput" placeholder="trest M:SS">
+    <button onclick="applyPenaltyTo('h1')">D1</button>
+    <button onclick="applyPenaltyTo('h2')">D2</button>
+    <button onclick="applyPenaltyTo('a1')">H1</button>
+    <button onclick="applyPenaltyTo('a2')">H2</button>
+  </div>
+
+</div>
+
+<script>
+const DUR={
+  period:20*60*1000,
+  break15:15*60*1000,
+  breakOT:2.5*60*1000,
+  ot:5*60*1000
+};
+
+function buildSegments(){
+  return[
+    {type:'play',label:'1',durationMs:DUR.period},
+    {type:'break',label:'P',durationMs:DUR.break15},
+    {type:'play',label:'2',durationMs:DUR.period},
+    {type:'break',label:'P',durationMs:DUR.break15},
+    {type:'play',label:'3',durationMs:DUR.period}
+  ];
+}
+
+let segments=buildSegments();
+let segIndex=0;
+let segRemainingMs=segments[0].durationMs;
+let scoreH=0,scoreA=0;
+let penalties={h1:0,h2:0,a1:0,a2:0};
+let running=false,rafId=null,startedAt=0,remainingAtStart=0;
+
+const elTime=document.getElementById('timeText');
+const elState=document.getElementById('state');
+const elScore=document.getElementById('score');
+
+function fmtMSS(ms){
+  const t=Math.max(0,Math.floor(ms/1000));
+  const m=Math.floor(t/60);
+  const s=t%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function fmtSecTenths(ms){
+  const t=Math.floor(ms/100);
+  return `${Math.floor(t/10)}.${t%10}`;
+}
+
+function updateUI(){
+  const seg=segments[segIndex];
+  const showTenths=seg.type==='play'&&segRemainingMs<60000;
+  elTime.textContent=showTenths?fmtSecTenths(segRemainingMs):fmtMSS(segRemainingMs);
+  elState.textContent=seg.label;
+  elScore.textContent=`${scoreH} : ${scoreA}`;
+  for(const k in penalties){
+    document.getElementById(k).textContent=fmtMSS(penalties[k]);
+  }
+}
+
+function start(){
+  if(running) return;
+  running=true;
+  startedAt=performance.now();
+  remainingAtStart=segRemainingMs;
+  let prev=startedAt;
+  const tick=()=>{
+    if(!running) return;
+    const now=performance.now();
+    const dt=now-prev; prev=now;
+    segRemainingMs=Math.max(0,remainingAtStart-(now-startedAt));
+    for(const k in penalties){
+      penalties[k]=Math.max(0,penalties[k]-dt);
+    }
+    if(segRemainingMs<=0){ segRemainingMs=0; handleEnd(); return; }
+    updateUI();
+    rafId=requestAnimationFrame(tick);
+  };
+  rafId=requestAnimationFrame(tick);
+}
+function stop(){
+  if(!running) return;
+  running=false;
+  cancelAnimationFrame(rafId);
+  segRemainingMs=Math.max(0,remainingAtStart-(performance.now()-startedAt));
+  updateUI();
+}
+function toggle(){ running?stop():start(); }
+
+function handleEnd(){
+  if(segIndex<segments.length-1){
+    segIndex++;
+    segRemainingMs=segments[segIndex].durationMs;
+    start();
+  }else stop();
+}
+function skipSegment(){ stop(); handleEnd(); }
+
+function goal(t,delta){
+  if(t==='h') scoreH=Math.max(0,scoreH+delta);
+  else scoreA=Math.max(0,scoreA+delta);
+  updateUI();
+}
+
+function applyMainTime(){
+  stop();
+  const v=document.getElementById('mainTimeInput').value.trim();
+  const m=v.match(/^(\d{1,2}):([0-5]\d)(?:\.(\d))?$/);
+  if(!m) return;
+  segRemainingMs=(+m[1]*60+ +m[2])*1000+(m[3]?+m[3]*100:0);
+  updateUI();
+}
+
+function applyPenaltyTo(id){
+  const v=document.getElementById('penTimeInput').value.trim();
+  const m=v.match(/^(\d{1,2}):([0-5]\d)$/);
+  if(!m) return;
+  penalties[id]=(m[1]*60+ +m[2])*1000;
+  updateUI();
+}
+
+function resetAll(){
+  stop();
+  segments=buildSegments();
+  segIndex=0;
+  segRemainingMs=segments[0].durationMs;
+  scoreH=scoreA=0;
+  penalties={h1:0,h2:0,a1:0,a2:0};
+  updateUI();
+}
+
+updateUI();
+</script>
+</body>
+</html>
