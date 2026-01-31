@@ -15,7 +15,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* žádné pozadí + barva textu */
   body{
     margin:0;
     background:transparent;
@@ -100,14 +99,12 @@
 <body>
 <div class="wrapper">
 
-  <!-- DISPLEJ -->
   <div class="top">
     <div class="cell" id="time"><span id="timeText">20:00</span></div>
     <div class="cell" id="state">1</div>
     <div class="cell" id="score">0 : 0</div>
   </div>
 
-  <!-- TRESTY -->
   <div class="penalties">
     <div class="penTime" id="h1">0:00</div>
     <div class="penTime" id="h2">0:00</div>
@@ -115,7 +112,6 @@
     <div class="penTime" id="a2">0:00</div>
   </div>
 
-  <!-- OVLÁDÁNÍ -->
   <div class="controls">
     <button onclick="toggle()">START / STOP</button>
     <button onclick="resetAll()">RESET</button>
@@ -148,12 +144,12 @@ const DUR={
 
 function buildSegments(){
   return[
-    {type:'play',label:'1',durationMs:DUR.period},
-    {type:'break',label:'P',durationMs:DUR.break15},
-    {type:'play',label:'2',durationMs:DUR.period},
-    {type:'break',label:'P',durationMs:DUR.break15},
-    {type:'play',label:'3',durationMs:DUR.period}
-    // OT se doplní automaticky po 3. třetině, pokud je remíza
+    {type:'play', label:'1', durationMs:DUR.period},
+    {type:'break',label:'P', durationMs:DUR.break15},
+    {type:'play', label:'2', durationMs:DUR.period},
+    {type:'break',label:'P', durationMs:DUR.break15},
+    {type:'play', label:'3', durationMs:DUR.period}
+    // OT se doplní po 3. třetině při remíze
   ];
 }
 
@@ -161,10 +157,10 @@ let segments=buildSegments();
 let segIndex=0;
 let segRemainingMs=segments[0].durationMs;
 
-let scoreH=0,scoreA=0;
+let scoreH=0, scoreA=0;
 let penalties={h1:0,h2:0,a1:0,a2:0};
 
-let running=false,rafId=null,startedAt=0,remainingAtStart=0;
+let running=false, rafId=null, startedAt=0, remainingAtStart=0;
 
 const elTime=document.getElementById('timeText');
 const elState=document.getElementById('state');
@@ -183,15 +179,16 @@ function fmtSecTenths(ms){
 
 function updateUI(){
   const seg=segments[segIndex];
-  const showTenths=seg.type==='play' && segRemainingMs<60000;
-  elTime.textContent=showTenths?fmtSecTenths(segRemainingMs):fmtMSS(segRemainingMs);
-  elState.textContent=seg.label;
-  elScore.textContent=`${scoreH} : ${scoreA}`;
+  const showTenths = seg.type==='play' && segRemainingMs<60000;
+  elTime.textContent = showTenths ? fmtSecTenths(segRemainingMs) : fmtMSS(segRemainingMs);
+  elState.textContent = seg.label;
+  elScore.textContent = `${scoreH} : ${scoreA}`;
   for(const k in penalties){
-    document.getElementById(k).textContent=fmtMSS(penalties[k]);
+    document.getElementById(k).textContent = fmtMSS(penalties[k]);
   }
 }
 
+/* ===== BĚH ===== */
 function start(){
   if(running) return;
   running=true;
@@ -204,10 +201,10 @@ function start(){
     const now=performance.now();
     const dt=now-prev; prev=now;
 
-    segRemainingMs=Math.max(0,remainingAtStart-(now-startedAt));
+    segRemainingMs=Math.max(0, remainingAtStart-(now-startedAt));
 
     for(const k in penalties){
-      penalties[k]=Math.max(0,penalties[k]-dt);
+      penalties[k]=Math.max(0, penalties[k]-dt);
     }
 
     if(segRemainingMs<=0){
@@ -229,15 +226,14 @@ function stop(){
   if(!running) return;
   running=false;
   cancelAnimationFrame(rafId);
-  segRemainingMs=Math.max(0,remainingAtStart-(performance.now()-startedAt));
+  segRemainingMs=Math.max(0, remainingAtStart-(performance.now()-startedAt));
   updateUI();
 }
-function toggle(){ running?stop():start(); }
+
+function toggle(){ running ? stop() : start(); }
 
 /* ===== OT LOGIKA ===== */
 function ensureOTIfNeeded(){
-  // Pokud jsme právě dohráli 3. třetinu a zápas je remíza, přidej P (2:30) + OT (5:00)
-  // Přidat jen jednou.
   const alreadyHasOT = segments.some(s => s.label==='OT');
   if(alreadyHasOT) return;
 
@@ -248,31 +244,65 @@ function ensureOTIfNeeded(){
   }
 }
 
+/* ===== PŘECHODY =====
+- přestávky P se odpočítávají automaticky
+- ale začátky 2, 3 a OT se AUTOMATICKY STOPNOU (čeká se na Start)
+*/
 function handleEnd(){
-  // když skončí úsek, nejdřív případně doplň OT po 3. třetině
   ensureOTIfNeeded();
 
+  if(segIndex >= segments.length-1){
+    stop();
+    return;
+  }
+
+  // přejdi na další segment
+  segIndex++;
+  segRemainingMs = segments[segIndex].durationMs;
+  updateUI();
+
+  const next = segments[segIndex];
+
+  // pokud je začátek nové třetiny nebo OT -> STOP (čeká na Start)
+  const isNewPlayStart = (next.type === 'play' && (next.label==='2' || next.label==='3' || next.label==='OT'));
+  if(isNewPlayStart){
+    stop();          // jen jistota (když by něco běželo)
+    // už je stopnuto, čekáme na Start
+    return;
+  }
+
+  // jinak pokračuj automaticky (typicky přestávka P)
+  start();
+}
+
+/* Přeskočení úseku */
+function skipSegment(){
+  stop();
+  ensureOTIfNeeded();
+
+  // jdi na další úsek
   if(segIndex < segments.length-1){
     segIndex++;
     segRemainingMs = segments[segIndex].durationMs;
-    // automaticky pokračuje (pauzy i OT se rozjedou samy)
-    start();
+    updateUI();
   } else {
-    stop();
+    updateUI();
+    return;
   }
-}
 
-function skipSegment(){
-  stop();
-  // pokud přeskočíš konec 3. třetiny, OT logika se také vyhodnotí
-  ensureOTIfNeeded();
-  handleEnd();
+  const next = segments[segIndex];
+  const isNewPlayStart = (next.type === 'play' && (next.label==='2' || next.label==='3' || next.label==='OT'));
+  if(isNewPlayStart){
+    // čeká na start
+    return;
+  }
+  start();
 }
 
 /* ===== SKÓRE ===== */
 function goal(t,delta){
-  if(t==='h') scoreH=Math.max(0,scoreH+delta);
-  else scoreA=Math.max(0,scoreA+delta);
+  if(t==='h') scoreH=Math.max(0, scoreH+delta);
+  else scoreA=Math.max(0, scoreA+delta);
   updateUI();
 }
 
@@ -283,10 +313,7 @@ function applyMainTime(){
   const m=v.match(/^(\d{1,2}):([0-5]\d)(?:\.(\d))?$/);
   if(!m) return;
 
-  const mm = +m[1];
-  const ss = +m[2];
-  const d  = (m[3] ? +m[3] : 0); // když nezadáš, dáme .0
-
+  const mm=+m[1], ss=+m[2], d=(m[3]?+m[3]:0);
   segRemainingMs = (mm*60 + ss)*1000 + d*100;
   updateUI();
 }
