@@ -1,284 +1,356 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="cs">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Časomíra</title>
+    <meta charset="UTF-8">
+    <title>Hokejová Časomíra PRO - Penalty Fix</title>
+    <style>
+        :root {
+            --bg-blue: #1b89e3;
+            --bg-black: #000;
+            --dot-goal: #2ecc71;
+            --dot-miss: #e74c3c;
+            --board-height: 100px;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@700&display=swap" rel="stylesheet">
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0; 
+            margin: 0;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
 
-<style>
-  *{
-    box-sizing:border-box;
-    font-family:'IBM Plex Sans', sans-serif;
-    font-weight:700;
-    font-variant-numeric: tabular-nums;
-  }
+        /* OBAL PRO SKRÝVÁNÍ */
+        #scoreboard-wrapper {
+            transition: all 0.5s ease-in-out;
+            opacity: 1;
+        }
 
-  body{
-    margin:0;
-    background:transparent;
-    color:#282463;
-  }
+        #scoreboard-wrapper.hide-it {
+            opacity: 0;
+            transform: translateY(-30px);
+            pointer-events: none;
+        }
 
-  .wrapper{
-    height:100vh;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    gap:14px;
-    padding:16px;
-  }
+        /* SCOREBOARD MAIN */
+        .scoreboard {
+            display: flex;
+            height: var(--board-height);
+            background: white;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 4px;
+            font-weight: 800;
+            /* overflow: visible; - Důležité pro zobrazení trestů pod hranou */
+        }
 
-  :root{ --SZ: 56px; }
+        .box { display: flex; align-items: center; justify-content: center; text-align: center; }
 
-  .top{
-    width:min(980px, 100%);
-    display:grid;
-    grid-template-columns: 1fr 0.4fr 1fr;
-    align-items:center;
-    font-size:var(--SZ);
-  }
+        /* TÝMY A SKÓRE */
+        .score { width: 90px; font-size: 60px; color: #000; background: #fff; z-index: 2; }
+        .team { width: 170px; background-color: var(--bg-blue); color: white; font-size: 45px; position: relative; z-index: 2; }
 
-  .cell{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    white-space:nowrap;
-  }
+        /* STŘEDOVÝ PANEL */
+        .center-display {
+            width: 380px; 
+            background: #fff;
+            display: flex;
+            z-index: 2;
+        }
 
-  #time{ min-width:6ch; }
-  #state{ min-width:3ch; }
+        .period-box {
+            width: 75px;
+            height: 100%;
+            background: var(--bg-black);
+            color: white;
+            font-size: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-  /* === SKÓRE – DVA SAMOSTATNÉ BLOKY === */
-  .scoreWrap{
-    display:flex;
-    justify-content:center;
-    gap:40px;              /* rozestup mezi skóre */
-  }
-  .scoreBox{
-    min-width:2ch;         /* drží místo (0–99) */
-    text-align:center;
-  }
+        .timer-box {
+            flex-grow: 1;
+            font-size: 75px;
+            color: #000;
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-  .penalties{
-    width:min(980px, 100%);
-    display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:10px;
-    font-size:var(--SZ);
-    text-align:center;
-    margin-top:6px;
-  }
+        /* TRESTY - OPRAVENO ZOBRAZOVÁNÍ */
+        .penalty-area { 
+            position: absolute; 
+            top: 100%; 
+            left: 0; 
+            width: 100%; 
+            background-color: var(--bg-blue); 
+            color: white;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        .penalty-row { 
+            height: 40px; 
+            border-top: 2px solid rgba(255,255,255,0.3); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 30px;
+            font-weight: 700;
+        }
 
-  .penTime{ min-width:4ch; }
+        /* NÁJEZDY */
+        .so-display { 
+            display: none; 
+            flex-direction: column; 
+            gap: 10px; 
+            width: 100%; 
+            height: 100%;
+            justify-content: center; 
+            align-items: center;
+        }
+        .so-row { display: flex; gap: 8px; justify-content: center; }
+        .dot { width: 22px; height: 22px; border-radius: 50%; background: #ddd; border: 1px solid #bbb; }
+        .dot.goal { background: var(--dot-goal); border-color: #27ae60; }
+        .dot.miss { background: var(--dot-miss); border-color: #c0392b; }
 
-  .controls{
-    width:min(980px, 100%);
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    justify-content:center;
-    margin-top:10px;
-  }
+        /* MODY */
+        .mode-so .timer-box, .mode-so .period-box { display: none; }
+        .mode-so .so-display { display: flex; }
 
-  button{
-    background:rgba(0,0,0,0.08);
-    color:#282463;
-    border:2px solid rgba(40,36,99,0.35);
-    padding:10px 14px;
-    font-size:16px;
-    cursor:pointer;
-  }
+        /* ADMIN PANEL */
+        .admin-panel {
+            margin-top: 150px;
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 1000px;
+            color: white;
+        }
 
-  input{
-    background:rgba(0,0,0,0.08);
-    color:#282463;
-    border:2px solid rgba(40,36,99,0.35);
-    padding:8px 10px;
-    font-size:16px;
-    width:170px;
-  }
-</style>
+        .admin-group { background: #252525; padding: 15px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
+        button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-start { background: #2ecc71; color: white; }
+        .btn-stop { background: #e74c3c; color: white; }
+        .btn-blue { background: var(--bg-blue); color: white; }
+        
+        .btn-hide-wrapper {
+            grid-column: span 3;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .btn-hide { 
+            background: #444; color: #fff; padding: 12px 30px; 
+            font-size: 14px; opacity: 0.8; border: 1px solid #555;
+        }
+        .btn-hide:hover { opacity: 1; background: #555; }
+        
+        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
+        h3 { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; }
+    </style>
 </head>
+<body id="main-body">
 
-<body>
-<div class="wrapper">
+    <div id="scoreboard-wrapper">
+        <div class="scoreboard" id="board">
+            <div class="box score" id="disp-score-home">0</div>
+            <div class="box team">
+                <span>VLA</span>
+                <div id="penalties-home" class="penalty-area"></div>
+            </div>
 
-  <!-- DISPLEJ -->
-  <div class="top">
-    <div class="cell" id="time"><span id="timeText">20:00</span></div>
-    <div class="cell" id="state">1</div>
+            <div class="box center-display">
+                <div class="period-box" id="disp-period">1</div>
+                <div class="timer-box" id="disp-time">20:00</div>
+                
+                <div class="so-display">
+                    <div class="so-row" id="so-dots-home"></div>
+                    <div class="so-row" id="so-dots-away"></div>
+                </div>
+            </div>
 
-    <!-- SKÓRE (2 samostatné texty) -->
-    <div class="cell">
-      <div class="scoreWrap">
-        <div class="scoreBox" id="scoreHome">0</div>
-        <div class="scoreBox" id="scoreAway">0</div>
-      </div>
+            <div class="box team">
+                <span>KUH</span>
+                <div id="penalties-away" class="penalty-area"></div>
+            </div>
+            <div class="box score" id="disp-score-away">0</div>
+        </div>
     </div>
-  </div>
 
-  <!-- TRESTY -->
-  <div class="penalties">
-    <div class="penTime" id="h1">0:00</div>
-    <div class="penTime" id="h2">0:00</div>
-    <div class="penTime" id="a1">0:00</div>
-    <div class="penTime" id="a2">0:00</div>
-  </div>
+    <div class="admin-panel">
+        <div class="admin-group">
+            <h3>Nastavení</h3>
+            <select id="in-period" onchange="changeMode()" style="padding:10px; background:#333; color:white; border:none;">
+                <option value="1">1. TŘETINA</option>
+                <option value="2">2. TŘETINA</option>
+                <option value="3">3. TŘETINA</option>
+                <option value="OT">PRODLOUŽENÍ</option>
+                <option value="SO">NÁJEZDY</option>
+            </select>
+            <div id="ctrl-time">
+                <button id="mainBtn" class="btn-start" onclick="toggleTimer()" style="width:100%">START / STOP</button>
+                <div style="display:flex; gap:5px; margin-top:5px">
+                    <input type="number" id="in-min" value="20" style="width:45%">
+                    <input type="number" id="in-sec" value="0" style="width:45%">
+                </div>
+                <button class="btn-blue" onclick="setManualTime()" style="margin-top:5px; width:100%">NASTAVIT ČAS</button>
+            </div>
+        </div>
 
-  <!-- OVLÁDÁNÍ -->
-  <div class="controls">
-    <button onclick="toggle()">START / STOP</button>
-    <button onclick="resetAll()">RESET</button>
-    <button onclick="skipSegment()">DALŠÍ ÚSEK</button>
+        <div class="admin-group">
+            <h3>VLA (Domácí)</h3>
+            <button class="btn-blue" onclick="changeScore('home', 1)">+ GÓL</button>
+            <button class="btn-blue" onclick="changeScore('home', -1)" style="background:#444; font-size:10px">UBRAT GÓL</button>
+            <div id="ctrl-penalty-home">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:4px">
+                    <button class="btn-blue" onclick="addPenalty('home', 2)">2M</button>
+                    <button class="btn-blue" onclick="addPenalty('home', 4)">4M</button>
+                    <button class="btn-blue" onclick="addPenalty('home', 5)">5M</button>
+                </div>
+                <div id="ctrl-list-home" style="margin-top:10px"></div>
+            </div>
+            <div id="ctrl-so-home" style="display:none">
+                <div style="display:flex; gap:8px">
+                    <button class="btn-start" style="flex:1" onclick="addSO('home', 'goal')">GÓL</button>
+                    <button class="btn-stop" style="flex:1" onclick="addSO('home', 'miss')">X</button>
+                </div>
+                <button onclick="resetSO('home')" style="background:none; color:#555; font-size:9px; margin-top:5px; width:100%">RESET</button>
+            </div>
+        </div>
 
-    <button onclick="goal('h',1)">DOM +</button>
-    <button onclick="goal('h',-1)">DOM −</button>
-    <button onclick="goal('a',1)">HOS +</button>
-    <button onclick="goal('a',-1)">HOS −</button>
+        <div class="admin-group">
+            <h3>KUH (Hosté)</h3>
+            <button class="btn-blue" onclick="changeScore('away', 1)">+ GÓL</button>
+            <button class="btn-blue" onclick="changeScore('away', -1)" style="background:#444; font-size:10px">UBRAT GÓL</button>
+            <div id="ctrl-penalty-away">
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:4px">
+                    <button class="btn-blue" onclick="addPenalty('away', 2)">2M</button>
+                    <button class="btn-blue" onclick="addPenalty('away', 4)">4M</button>
+                    <button class="btn-blue" onclick="addPenalty('away', 5)">5M</button>
+                </div>
+                <div id="ctrl-list-away" style="margin-top:10px"></div>
+            </div>
+            <div id="ctrl-so-away" style="display:none">
+                <div style="display:flex; gap:8px">
+                    <button class="btn-start" style="flex:1" onclick="addSO('away', 'goal')">GÓL</button>
+                    <button class="btn-stop" style="flex:1" onclick="addSO('away', 'miss')">X</button>
+                </div>
+                <button onclick="resetSO('away')" style="background:none; color:#555; font-size:9px; margin-top:5px; width:100%">RESET</button>
+            </div>
+        </div>
 
-    <input id="mainTimeInput" placeholder="čas M:SS nebo M:SS.d">
-    <button onclick="applyMainTime()">NASTAVIT ČAS</button>
+        <div class="btn-hide-wrapper">
+            <button class="btn-hide" onclick="toggleVisibility()">ZOBRAZIT / SKRÝT TABULKU NA OBRAZOVCE</button>
+        </div>
+    </div>
 
-    <input id="penTimeInput" placeholder="trest M:SS">
-    <button onclick="applyPenaltyTo('h1')">D1</button>
-    <button onclick="applyPenaltyTo('h2')">D2</button>
-    <button onclick="applyPenaltyTo('a1')">H1</button>
-    <button onclick="applyPenaltyTo('a2')">H2</button>
-  </div>
+    <script>
+        let timeLeft = 1200000; let isRunning = false; let lastTs = 0;
+        let scoreHome = 0, scoreAway = 0;
+        let penaltiesHome = [], penaltiesAway = [];
+        let soHome = [], soAway = [];
 
-</div>
+        function toggleVisibility() {
+            document.getElementById('scoreboard-wrapper').classList.toggle('hide-it');
+        }
 
-<script>
-const DUR={period:20*60*1000,break15:15*60*1000,breakOT:2.5*60*1000,ot:5*60*1000};
+        function updateDisplay() {
+            document.getElementById('disp-time').innerText = formatTime(timeLeft);
+            document.getElementById('disp-score-home').innerText = scoreHome;
+            document.getElementById('disp-score-away').innerText = scoreAway;
+            renderPenalties('home'); renderPenalties('away');
+            renderSO();
+        }
 
-function buildSegments(){
-  return[
-    {type:'play',label:'1',durationMs:DUR.period},
-    {type:'break',label:'P',durationMs:DUR.break15},
-    {type:'play',label:'2',durationMs:DUR.period},
-    {type:'break',label:'P',durationMs:DUR.break15},
-    {type:'play',label:'3',durationMs:DUR.period}
-  ];
-}
+        function formatTime(ms) {
+            let s = Math.ceil(ms / 1000);
+            return `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+        }
 
-let segments=buildSegments(), segIndex=0, segRemainingMs=segments[0].durationMs;
-let scoreH=0, scoreA=0;
-let penalties={h1:0,h2:0,a1:0,a2:0};
-let running=false, rafId=null, startedAt=0, remainingAtStart=0;
+        function renderPenalties(t) {
+            const list = (t === 'home') ? penaltiesHome : penaltiesAway;
+            const sb = document.getElementById('penalties-' + t);
+            const ctrl = document.getElementById('ctrl-list-' + t);
+            sb.innerHTML = ''; ctrl.innerHTML = '';
+            list.forEach((p, i) => {
+                const div = document.createElement('div'); div.className = 'penalty-row';
+                div.innerText = formatTime(p.remaining); sb.appendChild(div);
+                
+                const c = document.createElement('div'); c.style.display="flex"; c.style.justifyContent="space-between"; c.style.marginBottom="4px";
+                c.innerHTML = `<span style="font-size:11px">${formatTime(p.remaining)}</span><button onclick="removePenalty('${t}',${i})" style="padding:2px 5px; background:#e74c3c; font-size:9px; color:white; border-radius:2px;">X</button>`;
+                ctrl.appendChild(c);
+            });
+        }
 
-const elTime=document.getElementById('timeText');
-const elState=document.getElementById('state');
-const elScoreH=document.getElementById('scoreHome');
-const elScoreA=document.getElementById('scoreAway');
+        function renderSO() {
+            const draw = (id, arr) => {
+                const el = document.getElementById(id); el.innerHTML = '';
+                for(let i=0; i<Math.max(5, arr.length); i++) {
+                    const d = document.createElement('div'); d.className = 'dot' + (arr[i] ? ' ' + arr[i] : '');
+                    el.appendChild(d);
+                }
+            };
+            draw('so-dots-home', soHome); draw('so-dots-away', soAway);
+        }
 
-function fmtMSS(ms){
-  const t=Math.max(0,Math.floor(ms/1000));
-  return `${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`;
-}
-function fmtSecTenths(ms){
-  const t=Math.floor(ms/100);
-  return `${Math.floor(t/10)}.${t%10}`;
-}
+        function changeMode() {
+            const val = document.getElementById('in-period').value;
+            const body = document.getElementById('main-body');
+            document.getElementById('disp-period').innerText = val;
+            const isSO = (val === 'SO');
+            body.classList.toggle('mode-so', isSO);
+            document.getElementById('ctrl-time').style.display = isSO ? 'none' : 'block';
+            document.getElementById('ctrl-penalty-home').style.display = isSO ? 'none' : 'block';
+            document.getElementById('ctrl-penalty-away').style.display = isSO ? 'none' : 'block';
+            document.getElementById('ctrl-so-home').style.display = isSO ? 'block' : 'none';
+            document.getElementById('ctrl-so-away').style.display = isSO ? 'block' : 'none';
+            updateDisplay();
+        }
 
-function updateUI(){
-  const seg=segments[segIndex];
-  elTime.textContent = (seg.type==='play'&&segRemainingMs<60000)
-    ? fmtSecTenths(segRemainingMs)
-    : fmtMSS(segRemainingMs);
+        function toggleTimer() {
+            const btn = document.getElementById('mainBtn');
+            if (!isRunning) {
+                isRunning = true; lastTs = performance.now();
+                requestAnimationFrame(tick);
+                btn.innerText = "STOP"; btn.className = "btn-stop";
+            } else {
+                isRunning = false; btn.innerText = "START"; btn.className = "btn-start";
+            }
+        }
 
-  elState.textContent = seg.label;
-  elScoreH.textContent = scoreH;
-  elScoreA.textContent = scoreA;
+        function tick(ts) {
+            if (!isRunning) return;
+            let d = ts - lastTs; lastTs = ts;
+            timeLeft = Math.max(0, timeLeft - d);
+            [penaltiesHome, penaltiesAway].forEach(l => l.forEach(p => p.remaining -= d));
+            penaltiesHome = penaltiesHome.filter(p => p.remaining > 0);
+            penaltiesAway = penaltiesAway.filter(p => p.remaining > 0);
+            updateDisplay();
+            if (timeLeft > 0) requestAnimationFrame(tick);
+            else { isRunning = false; document.getElementById('mainBtn').innerText = "START"; document.getElementById('mainBtn').className = "btn-start"; }
+        }
 
-  for(const k in penalties){
-    document.getElementById(k).textContent = fmtMSS(penalties[k]);
-  }
-}
+        function changeScore(t, v) { if(t==='home') scoreHome=Math.max(0,scoreHome+v); else scoreAway=Math.max(0,scoreAway+v); updateDisplay(); }
+        function setManualTime() { 
+            timeLeft = (parseInt(document.getElementById('in-min').value || 0) * 60 + parseInt(document.getElementById('in-sec').value || 0)) * 1000; 
+            updateDisplay(); 
+        }
+        function addPenalty(t, m) { 
+            const l=(t==='home')?penaltiesHome:penaltiesAway; 
+            if(l.length < 2) l.push({remaining:m*60000}); 
+            updateDisplay(); 
+        }
+        function removePenalty(t, i) { if(t==='home') penaltiesHome.splice(i,1); else penaltiesAway.splice(i,1); updateDisplay(); }
+        function addSO(t, res) { if(t==='home') soHome.push(res); else soAway.push(res); updateDisplay(); }
+        function resetSO(t) { if(t==='home') soHome=[]; else soAway=[]; updateDisplay(); }
 
-function start(){
-  if(running) return;
-  running=true;
-  startedAt=performance.now();
-  remainingAtStart=segRemainingMs;
-  let prev=startedAt;
-
-  const tick=()=>{
-    if(!running) return;
-    const now=performance.now(), dt=now-prev; prev=now;
-
-    segRemainingMs=Math.max(0,remainingAtStart-(now-startedAt));
-    for(const k in penalties){ penalties[k]=Math.max(0,penalties[k]-dt); }
-
-    if(segRemainingMs<=0){ handleEnd(); return; }
-    updateUI(); rafId=requestAnimationFrame(tick);
-  };
-  rafId=requestAnimationFrame(tick);
-}
-
-function stop(){
-  if(!running) return;
-  running=false;
-  cancelAnimationFrame(rafId);
-  segRemainingMs=Math.max(0,remainingAtStart-(performance.now()-startedAt));
-  updateUI();
-}
-function toggle(){ running?stop():start(); }
-
-function ensureOT(){
-  if(segments.some(s=>s.label==='OT')) return;
-  const cur=segments[segIndex];
-  if(cur.label==='3'&&scoreH===scoreA){
-    segments.push({type:'break',label:'P',durationMs:DUR.breakOT});
-    segments.push({type:'play',label:'OT',durationMs:DUR.ot});
-  }
-}
-
-function handleEnd(){
-  ensureOT();
-  if(segIndex>=segments.length-1){ stop(); return; }
-  segIndex++; segRemainingMs=segments[segIndex].durationMs; updateUI();
-
-  const next=segments[segIndex];
-  if(next.type==='play'&&(next.label==='2'||next.label==='3'||next.label==='OT')) return;
-  start();
-}
-
-function skipSegment(){ stop(); ensureOT(); handleEnd(); }
-
-function goal(t,d){
-  if(t==='h') scoreH=Math.max(0,scoreH+d);
-  else scoreA=Math.max(0,scoreA+d);
-  updateUI();
-}
-
-function applyMainTime(){
-  stop();
-  const m=document.getElementById('mainTimeInput').value.trim()
-    .match(/^(\d{1,2}):([0-5]\d)(?:\.(\d))?$/);
-  if(!m) return;
-  segRemainingMs=(+m[1]*60+ +m[2])*1000+(m[3]?+m[3]*100:0);
-  updateUI();
-}
-
-function applyPenaltyTo(id){
-  const m=document.getElementById('penTimeInput').value.trim()
-    .match(/^(\d{1,2}):([0-5]\d)$/);
-  if(!m) return;
-  penalties[id]=(m[1]*60+ +m[2])*1000;
-  updateUI();
-}
-
-function resetAll(){
-  stop();
-  segments=buildSegments(); segIndex=0; segRemainingMs=segments[0].durationMs;
-  scoreH=scoreA=0; penalties={h1:0,h2:0,a1:0,a2:0};
-  updateUI();
-}
-
-updateUI();
-</script>
+        updateDisplay();
+    </script>
 </body>
 </html>
