@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Hokejová Časomíra PRO - Final</title>
+    <title>Hokejová Časomíra PRO</title>
     <style>
         :root {
             --bg-blue: #1b89e3;
@@ -23,7 +23,7 @@
         }
 
         /* SCOREBOARD */
-        #scoreboard-wrapper { width: 100%; max-width: 850px; margin-bottom: 95px; transition: opacity 0.3s; }
+        #scoreboard-wrapper { width: 100%; max-width: 950px; margin-bottom: 95px; transition: opacity 0.3s; }
         .hidden { opacity: 0; pointer-events: none; }
 
         .scoreboard {
@@ -32,21 +32,23 @@
             background: white;
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             border-radius: 6px;
+            overflow: visible;
         }
 
         .box { display: flex; align-items: center; justify-content: center; text-align: center; }
-        .score { width: 15%; font-size: 55px; background: #fff; font-weight: 900; }
-        .team { width: 25%; background-color: var(--bg-blue); color: white; font-size: 32px; position: relative; text-transform: uppercase; }
-
-        .center-display { width: 40%; background: #fff; display: flex; overflow: hidden; }
-        .period-box { width: 65px; height: 100%; background: var(--bg-black); color: white; font-size: 38px; }
-        .timer-box { flex-grow: 1; font-size: 50px; font-variant-numeric: tabular-nums; min-width: 160px; }
+        .team { width: 20%; background-color: var(--bg-blue); color: white; font-size: 28px; position: relative; text-transform: uppercase; }
+        .score { width: 80px; font-size: 55px; background: #fff; font-weight: 900; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+        .period-box { width: 80px; height: 100%; background: #fff; color: #000; font-size: 45px; font-weight: 900; border-right: 1px solid #eee; }
+        
+        .center-display { flex-grow: 1; background: #fff; display: flex; position: relative; }
+        .timer-box { width: 100%; font-size: 55px; font-variant-numeric: tabular-nums; font-weight: 900; }
         
         .so-display { display: none; flex-direction: column; justify-content: center; align-items: center; width: 100%; gap: 8px; }
         .so-row { display: flex; gap: 6px; }
         .dot { width: 16px; height: 16px; border-radius: 50%; background: #ddd; border: 1px solid #aaa; }
         .dot.goal { background: var(--dot-goal); border-color: #27ae60; }
         .dot.miss { background: var(--dot-miss); border-color: #c0392b; }
+        
         .mode-so .timer-box, .mode-so .period-box { display: none; }
         .mode-so .so-display { display: flex; }
 
@@ -66,17 +68,19 @@
             color: white;
             border: 2px solid #333;
         }
-
         .admin-group { background: #252525; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
         h3 { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; }
         
+        .period-selector { display: flex; gap: 4px; }
+        .period-selector button { flex: 1; padding: 8px 0; background: #444; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .period-selector button.active { background: var(--bg-blue); }
+
         button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
         .btn-blue { background: var(--bg-blue); color: white; }
         .btn-start { background: #2ecc71; color: white; }
         .btn-stop { background: #e74c3c; color: white; }
         .btn-timeout { background: #f39c12; color: white; }
-        
-        input, select { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
+        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
         
         .so-admin-ctrl { display: none; flex-direction: column; gap: 5px; }
         .mode-so .so-admin-ctrl { display: flex; }
@@ -87,42 +91,50 @@
 
     <div id="scoreboard-wrapper">
         <div class="scoreboard">
-            <div class="box score" id="disp-score-home">0</div>
             <div class="box team">
                 <span id="name-home-display">DOM</span>
                 <div id="penalties-home" class="penalty-area"></div>
             </div>
+            
+            <div class="box score" id="disp-score-home">0</div>
+            <div class="box score" id="disp-score-away">0</div>
+            
+            <div class="box team">
+                <span id="name-away-display">HOS</span>
+                <div id="penalties-away" class="penalty-area"></div>
+            </div>
+
+            <div class="box period-box" id="disp-period">1</div>
+
             <div class="box center-display">
-                <div class="box period-box" id="disp-period">1</div>
                 <div class="box timer-box" id="disp-time">20:00</div>
                 <div class="so-display">
                     <div class="so-row" id="so-dots-home"></div>
                     <div class="so-row" id="so-dots-away"></div>
                 </div>
             </div>
-            <div class="box team">
-                <span id="name-away-display">HOS</span>
-                <div id="penalties-away" class="penalty-area"></div>
-            </div>
-            <div class="box score" id="disp-score-away">0</div>
         </div>
     </div>
 
     <div class="admin-panel">
         <div class="admin-group">
-            <h3>Časomíra</h3>
-            <select id="in-period" onchange="changeMode()">
-                <option value="1">1. TŘETINA</option>
-                <option value="2">2. TŘETINA</option>
-                <option value="3">3. TŘETINA</option>
-                <option value="OT">PRODLOUŽENÍ</option>
-                <option value="SO">NÁJEZDY (SO)</option>
-            </select>
+            <h3>Období zápasu</h3>
+            <div class="period-selector" id="p-selector">
+                <button onclick="setPeriod('1')" class="active">1</button>
+                <button onclick="setPeriod('2')">2</button>
+                <button onclick="setPeriod('3')">3</button>
+                <button onclick="setPeriod('OT')">OT</button>
+                <button onclick="setPeriod('SO')">SO</button>
+            </div>
             <button id="mainBtn" class="btn-start" onclick="toggleTimer()">START / STOP</button>
             <button id="timeoutBtn" class="btn-timeout" onclick="triggerTimeout()">TIMEOUT (25s)</button>
-            <button class="btn-blue" onclick="toggleBoard()" style="background:#555">ZOBRAZIT / SKRÝT</button>
-            <div style="display:flex; gap:4px;"><input type="number" id="in-min" value="20" style="width:45%"><input type="number" id="in-sec" value="0" style="width:45%"></div>
+            
+            <div style="display:flex; gap:4px; margin-top:5px;">
+                <input type="number" id="in-min" value="20" style="width:45%">
+                <input type="number" id="in-sec" value="0" style="width:45%">
+            </div>
             <button class="btn-blue" onclick="setManualTime()" style="font-size:11px">NASTAVIT ČAS</button>
+            <button class="btn-blue" onclick="toggleBoard()" style="background:#555; margin-top:5px">ZOBRAZIT / SKRÝT</button>
         </div>
 
         <div class="admin-group">
@@ -141,7 +153,7 @@
                 <div style="display:flex; gap:5px"><button class="btn-start" style="flex:1" onclick="addSO('home', 'goal')">GÓL</button><button class="btn-stop" style="flex:1" onclick="addSO('home', 'miss')">X</button></div>
                 <button onclick="resetSO('home')" style="font-size:10px; background:none; color:gray; border:1px solid #444; margin-top:5px">RESET NÁJEZDŮ</button>
             </div>
-            <button class="btn-blue" onclick="changeScore('home', -1)" style="font-size:10px; opacity:0.5">-1 BOD</button>
+            <button class="btn-blue" onclick="changeScore('home', -1)" style="font-size:10px; opacity:0.5; margin-top:auto">-1 BOD</button>
         </div>
 
         <div class="admin-group">
@@ -160,7 +172,7 @@
                 <div style="display:flex; gap:5px"><button class="btn-start" style="flex:1" onclick="addSO('away', 'goal')">GÓL</button><button class="btn-stop" style="flex:1" onclick="addSO('away', 'miss')">X</button></div>
                 <button onclick="resetSO('away')" style="font-size:10px; background:none; color:gray; border:1px solid #444; margin-top:5px">RESET NÁJEZDŮ</button>
             </div>
-            <button class="btn-blue" onclick="changeScore('away', -1)" style="font-size:10px; opacity:0.5">-1 BOD</button>
+            <button class="btn-blue" onclick="changeScore('away', -1)" style="font-size:10px; opacity:0.5; margin-top:auto">-1 BOD</button>
         </div>
     </div>
 
@@ -175,6 +187,26 @@
         }
 
         function toggleBoard() { document.getElementById('scoreboard-wrapper').classList.toggle('hidden'); }
+
+        function setPeriod(p) {
+            document.getElementById('disp-period').innerText = p;
+            document.body.className = (p === 'SO') ? 'mode-so' : '';
+            
+            // AUTOMATICKÉ NASTAVENÍ ČASU
+            if (p === 'OT') {
+                timeLeft = 5 * 60 * 1000; // 5 minut pro OT
+                document.getElementById('in-min').value = 5;
+                document.getElementById('in-sec').value = 0;
+            } else if (p === '1' || p === '2' || p === '3') {
+                timeLeft = 20 * 60 * 1000; // 20 minut pro třetiny
+                document.getElementById('in-min').value = 20;
+                document.getElementById('in-sec').value = 0;
+            }
+
+            const btns = document.querySelectorAll('#p-selector button');
+            btns.forEach(btn => btn.classList.toggle('active', btn.innerText === p));
+            updateDisplay();
+        }
 
         function formatMainTime(ms) {
             if (ms < 60000 || isTimeout) {
@@ -222,13 +254,6 @@
                 }
             };
             draw('so-dots-home', soHome); draw('so-dots-away', soAway);
-        }
-
-        function changeMode() {
-            const val = document.getElementById('in-period').value;
-            document.getElementById('disp-period').innerText = val;
-            document.body.className = (val === 'SO') ? 'mode-so' : '';
-            updateDisplay();
         }
 
         function triggerTimeout() {
