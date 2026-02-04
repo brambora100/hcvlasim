@@ -23,7 +23,7 @@
         }
 
         /* SCOREBOARD */
-        #scoreboard-wrapper { width: 100%; max-width: 1000px; margin-bottom: 95px; transition: opacity 0.3s; }
+        #scoreboard-wrapper { width: 100%; max-width: 1100px; margin-bottom: 95px; transition: opacity 0.3s; }
         .hidden { opacity: 0; pointer-events: none; }
 
         .scoreboard {
@@ -40,13 +40,21 @@
 
         .box { display: flex; align-items: center; justify-content: center; text-align: center; }
         
-        /* Týmy */
-        .team { width: 220px; background-color: var(--bg-blue); color: white; font-size: 28px; position: relative; text-transform: uppercase; }
+        /* VĚTŠÍ NÁZVY TÝMŮ */
+        .team { 
+            width: 240px; 
+            background-color: var(--bg-blue); 
+            color: white; 
+            font-size: 36px; /* Zvětšeno z 28px */
+            position: relative; 
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
         
         .score { width: 80px; font-size: 55px; background: #fff; font-weight: 900; border-left: 1px solid #eee; border-right: 1px solid #eee; }
         .period-box { width: 80px; height: 100%; background: #fff; color: #000; font-size: 45px; font-weight: 900; border-right: 1px solid #eee; }
         
-        /* STŘEDNÍ BLOK - UPRAVENÁ ŠÍŘKA */
+        /* STŘEDNÍ BLOK PRO ČAS */
         .center-display { width: 220px; background: #fff; display: flex; position: relative; }
         .timer-box { width: 100%; font-size: 55px; font-variant-numeric: tabular-nums; font-weight: 900; }
         
