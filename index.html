@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Hokejová Časomíra PRO - HEX & RESET SO</title>
+    <title>Hokejová Časomíra PRO - FULL</title>
     <style>
         :root {
             --bg-home: #1b89e3;
@@ -21,10 +21,23 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        /* SCOREBOARD */
-        #scoreboard-wrapper { width: 100%; max-width: 1100px; margin-bottom: 150px; }
+        /* SCOREBOARD WRAPPER S EFEKTEM */
+        #scoreboard-wrapper { 
+            width: 100%; 
+            max-width: 1100px; 
+            margin-bottom: 150px; 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s;
+            transform-origin: top;
+        }
+        
+        /* Třída pro schování */
+        .hidden-ui { 
+            transform: translateY(-200px); 
+            opacity: 0; 
+        }
 
         .scoreboard {
             display: flex;
@@ -104,12 +117,14 @@
         .btn-start { background: #2ecc71; color: white; }
         .btn-stop { background: #e74c3c; color: white; }
         .btn-timeout { background: #f39c12; color: white; }
+        .btn-hide { background: #95a5a6; color: black; }
         .btn-minus { background: #444; color: #bbb; font-size: 10px; }
         .btn-reset-so { background: #8e44ad; color: white; font-size: 11px; margin-top: 5px; }
         
         .period-selector { display: flex; gap: 4px; }
         .period-selector button { flex: 1; padding: 8px 0; background: #444; color: white; font-size: 12px; }
         .period-selector button.active { background: #1b89e3; }
+        .penalty-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
         .penalty-ctrl-list { font-size: 11px; margin-top: 5px; color: #aaa; }
     </style>
 </head>
@@ -144,7 +159,8 @@
 
     <div class="admin-panel">
         <div class="admin-group">
-            <h3>Čas a Třetina</h3>
+            <h3>Systém</h3>
+            <button class="btn-hide" onclick="toggleVisibility()">SKRÝT / ZOBRAZIT GRAFIKU</button>
             <div class="period-selector" id="p-selector">
                 <button onclick="setPeriod('1')" class="active">1</button>
                 <button onclick="setPeriod('2')">2</button>
@@ -159,7 +175,6 @@
                 <input type="number" id="in-sec" value="0" style="width:45%">
             </div>
             <button class="btn-blue" onclick="setManualTime()" style="font-size:11px">NASTAVIT ČAS</button>
-            
             <div id="so-reset-container" style="display:none">
                 <button class="btn-reset-so" onclick="resetSO()" style="width:100%">RESET NÁJEZDŮ ↺</button>
             </div>
@@ -171,9 +186,10 @@
             <input type="text" id="in-hex-home" value="#1b89e3" placeholder="#HEX" oninput="updateSettings()">
             <button class="btn-blue" onclick="changeScore('home', 1)">GÓL +</button>
             <button class="btn-minus" onclick="changeScore('home', -1)">ODEBRAT GÓL -</button>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px">
-                <button class="btn-blue" onclick="addPenalty('home', 2)">2 MIN</button>
-                <button class="btn-blue" onclick="addPenalty('home', 5)">5 MIN</button>
+            <div class="penalty-grid">
+                <button class="btn-blue" onclick="addPenalty('home', 2)">2M</button>
+                <button class="btn-blue" onclick="addPenalty('home', 4)">4M</button>
+                <button class="btn-blue" onclick="addPenalty('home', 5)">5M</button>
             </div>
             <div id="ctrl-list-home" class="penalty-ctrl-list"></div>
             <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
@@ -188,9 +204,10 @@
             <input type="text" id="in-hex-away" value="#e74c3c" placeholder="#HEX" oninput="updateSettings()">
             <button class="btn-blue" onclick="changeScore('away', 1)">GÓL +</button>
             <button class="btn-minus" onclick="changeScore('away', -1)">ODEBRAT GÓL -</button>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px">
-                <button class="btn-blue" onclick="addPenalty('away', 2)">2 MIN</button>
-                <button class="btn-blue" onclick="addPenalty('away', 5)">5 MIN</button>
+            <div class="penalty-grid">
+                <button class="btn-blue" onclick="addPenalty('away', 2)">2M</button>
+                <button class="btn-blue" onclick="addPenalty('away', 4)">4M</button>
+                <button class="btn-blue" onclick="addPenalty('away', 5)">5M</button>
             </div>
             <div id="ctrl-list-away" class="penalty-ctrl-list"></div>
             <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
@@ -201,9 +218,14 @@
     </div>
 
     <script>
-        let timeLeft = 1200000, isRunning = false, lastTs = 0;
+        let timeLeft = 1200000, isRunning = false, lastTs = 0, isVisible = true;
         let scoreHome = 0, scoreAway = 0, penaltiesHome = [], penaltiesAway = [], soHome = [], soAway = [];
         let isTimeout = false, savedGameTime = 0;
+
+        function toggleVisibility() {
+            isVisible = !isVisible;
+            document.getElementById('scoreboard-wrapper').classList.toggle('hidden-ui', !isVisible);
+        }
 
         function updateSettings() {
             document.getElementById('name-home-display').innerText = document.getElementById('in-name-home').value;
@@ -215,15 +237,11 @@
         function setPeriod(p) {
             document.getElementById('disp-period').innerText = p;
             document.body.className = (p === 'SO') ? 'mode-so' : '';
-            
-            // Zobrazení ovládání pro SO
             const isSO = (p === 'SO');
             document.querySelectorAll('.so-admin-ctrl').forEach(el => el.style.display = isSO ? 'flex' : 'none');
             document.getElementById('so-reset-container').style.display = isSO ? 'block' : 'none';
-
             if (p === 'OT') timeLeft = 5 * 60 * 1000;
             else if (['1','2','3'].includes(p)) timeLeft = 20 * 60 * 1000;
-            
             const btns = document.querySelectorAll('#p-selector button');
             btns.forEach(btn => btn.classList.toggle('active', btn.innerText === p));
             updateDisplay();
