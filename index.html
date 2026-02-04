@@ -2,11 +2,11 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Hokejová Časomíra PRO</title>
+    <title>Hokejová Časomíra PRO - HEX & RESET SO</title>
     <style>
         :root {
-            --bg-blue-home: #1b89e3;
-            --bg-blue-away: #1b89e3;
+            --bg-home: #1b89e3;
+            --bg-away: #e74c3c;
             --bg-black: #000;
             --dot-goal: #2ecc71;
             --dot-miss: #e74c3c;
@@ -24,8 +24,7 @@
         }
 
         /* SCOREBOARD */
-        #scoreboard-wrapper { width: 100%; max-width: 1100px; margin-bottom: 120px; transition: opacity 0.3s; }
-        .hidden { opacity: 0; pointer-events: none; }
+        #scoreboard-wrapper { width: 100%; max-width: 1100px; margin-bottom: 150px; }
 
         .scoreboard {
             display: flex;
@@ -42,19 +41,18 @@
         .box { display: flex; align-items: center; justify-content: center; text-align: center; }
         
         .team { 
-            width: 240px; 
+            width: 250px; 
             color: white; 
             font-size: 36px;
             position: relative; 
             text-transform: uppercase;
-            letter-spacing: -1px;
         }
 
-        #box-home { background-color: var(--bg-blue-home); }
-        #box-away { background-color: var(--bg-blue-away); }
+        #box-home { background-color: var(--bg-home); }
+        #box-away { background-color: var(--bg-away); }
         
-        .score { width: 80px; font-size: 55px; background: #fff; font-weight: 900; border-left: 1px solid #eee; border-right: 1px solid #eee; }
-        .period-box { width: 80px; height: 100%; background: #fff; color: #000; font-size: 45px; font-weight: 900; border-right: 1px solid #eee; }
+        .score { width: 85px; font-size: 55px; background: #fff; font-weight: 900; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+        .period-box { width: 85px; height: 100%; background: #fff; color: #000; font-size: 45px; font-weight: 900; border-right: 1px solid #eee; }
         
         .center-display { width: 220px; background: #fff; display: flex; position: relative; }
         .timer-box { width: 100%; font-size: 55px; font-variant-numeric: tabular-nums; font-weight: 900; }
@@ -68,18 +66,20 @@
         .mode-so .timer-box, .mode-so .period-box { display: none; }
         .mode-so .so-display { display: flex; }
 
-        /* TRESTY - ZVĚTŠENO */
-        .penalty-area { position: absolute; top: 100%; left: 0; width: 100%; border-bottom-left-radius: 4px; border-bottom-right-radius: 4px; }
-        #penalties-home { background-color: var(--bg-blue-home); }
-        #penalties-away { background-color: var(--bg-blue-away); }
+        /* TRESTY - EXTRA VELKÉ */
+        .penalty-area { position: absolute; top: 100%; left: 0; width: 100%; }
+        #penalties-home { background-color: var(--bg-home); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+        #penalties-away { background-color: var(--bg-away); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+        
         .penalty-row { 
-            height: 42px; /* Zvětšeno z 30px */
-            border-top: 1px solid rgba(255,255,255,0.4); 
-            font-size: 32px; /* Zvětšeno z 22px */
+            height: 55px; 
+            border-top: 2px solid rgba(255,255,255,0.3); 
+            font-size: 40px; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
             font-weight: 900;
+            color: white;
         }
 
         /* ADMIN PANEL */
@@ -91,27 +91,26 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             width: 100%;
-            max-width: 850px;
+            max-width: 950px;
             color: white;
             border: 2px solid #333;
         }
         .admin-group { background: #252525; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
         h3 { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; }
         
-        .period-selector { display: flex; gap: 4px; }
-        .period-selector button { flex: 1; padding: 8px 0; background: #444; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .period-selector button.active { background: #1b89e3; }
-
+        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
         button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
         .btn-blue { background: #1b89e3; color: white; }
         .btn-start { background: #2ecc71; color: white; }
         .btn-stop { background: #e74c3c; color: white; }
         .btn-timeout { background: #f39c12; color: white; }
-        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
+        .btn-minus { background: #444; color: #bbb; font-size: 10px; }
+        .btn-reset-so { background: #8e44ad; color: white; font-size: 11px; margin-top: 5px; }
         
-        .so-admin-ctrl { display: none; flex-direction: column; gap: 5px; }
-        .mode-so .so-admin-ctrl { display: flex; }
-        .mode-so .penalty-admin-ctrl { display: none; }
+        .period-selector { display: flex; gap: 4px; }
+        .period-selector button { flex: 1; padding: 8px 0; background: #444; color: white; font-size: 12px; }
+        .period-selector button.active { background: #1b89e3; }
+        .penalty-ctrl-list { font-size: 11px; margin-top: 5px; color: #aaa; }
     </style>
 </head>
 <body>
@@ -119,7 +118,7 @@
     <div id="scoreboard-wrapper">
         <div class="scoreboard">
             <div class="box team" id="box-home">
-                <span id="name-home-display">DOM</span>
+                <span id="name-home-display">DOMÁCÍ</span>
                 <div id="penalties-home" class="penalty-area"></div>
             </div>
             
@@ -127,7 +126,7 @@
             <div class="box score" id="disp-score-away">0</div>
             
             <div class="box team" id="box-away">
-                <span id="name-away-display">HOS</span>
+                <span id="name-away-display">HOSTÉ</span>
                 <div id="penalties-away" class="penalty-area"></div>
             </div>
 
@@ -145,7 +144,7 @@
 
     <div class="admin-panel">
         <div class="admin-group">
-            <h3>Období zápasu</h3>
+            <h3>Čas a Třetina</h3>
             <div class="period-selector" id="p-selector">
                 <button onclick="setPeriod('1')" class="active">1</button>
                 <button onclick="setPeriod('2')">2</button>
@@ -155,53 +154,49 @@
             </div>
             <button id="mainBtn" class="btn-start" onclick="toggleTimer()">START / STOP</button>
             <button id="timeoutBtn" class="btn-timeout" onclick="triggerTimeout()">TIMEOUT (25s)</button>
-            
-            <div style="display:flex; gap:4px; margin-top:5px;">
+            <div style="display:flex; gap:4px;">
                 <input type="number" id="in-min" value="20" style="width:45%">
                 <input type="number" id="in-sec" value="0" style="width:45%">
             </div>
             <button class="btn-blue" onclick="setManualTime()" style="font-size:11px">NASTAVIT ČAS</button>
-            <button class="btn-blue" onclick="toggleBoard()" style="background:#555; margin-top:5px">ZOBRAZIT / SKRÝT</button>
+            
+            <div id="so-reset-container" style="display:none">
+                <button class="btn-reset-so" onclick="resetSO()" style="width:100%">RESET NÁJEZDŮ ↺</button>
+            </div>
         </div>
 
         <div class="admin-group">
-            <h3>Domácí</h3>
-            <input type="text" id="in-name-home" value="DOM" oninput="updateNames()">
-            <input type="color" id="in-color-home" value="#1b89e3" oninput="updateNames()">
+            <h3>Domácí (HEX)</h3>
+            <input type="text" id="in-name-home" value="DOMÁCÍ" oninput="updateSettings()">
+            <input type="text" id="in-hex-home" value="#1b89e3" placeholder="#HEX" oninput="updateSettings()">
             <button class="btn-blue" onclick="changeScore('home', 1)">GÓL +</button>
-            <div class="penalty-admin-ctrl">
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:4px">
-                    <button class="btn-blue" onclick="addPenalty('home', 2)">2M</button>
-                    <button class="btn-blue" onclick="addPenalty('home', 4)">4M</button>
-                    <button class="btn-blue" onclick="addPenalty('home', 5)">5M</button>
-                </div>
-                <div id="ctrl-list-home"></div>
+            <button class="btn-minus" onclick="changeScore('home', -1)">ODEBRAT GÓL -</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px">
+                <button class="btn-blue" onclick="addPenalty('home', 2)">2 MIN</button>
+                <button class="btn-blue" onclick="addPenalty('home', 5)">5 MIN</button>
             </div>
-            <div class="so-admin-ctrl">
-                <div style="display:flex; gap:5px"><button class="btn-start" style="flex:1" onclick="addSO('home', 'goal')">GÓL</button><button class="btn-stop" style="flex:1" onclick="addSO('home', 'miss')">X</button></div>
-                <button onclick="resetSO('home')" style="font-size:10px; background:none; color:gray; border:1px solid #444; margin-top:5px">RESET NÁJEZDŮ</button>
+            <div id="ctrl-list-home" class="penalty-ctrl-list"></div>
+            <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
+                <button class="btn-start" style="flex:1" onclick="addSO('home', 'goal')">GÓL</button>
+                <button class="btn-stop" style="flex:1" onclick="addSO('home', 'miss')">X</button>
             </div>
-            <button class="btn-blue" onclick="changeScore('home', -1)" style="font-size:10px; opacity:0.5; margin-top:auto">-1 BOD</button>
         </div>
 
         <div class="admin-group">
-            <h3>Hosté</h3>
-            <input type="text" id="in-name-away" value="HOS" oninput="updateNames()">
-            <input type="color" id="in-color-away" value="#1b89e3" oninput="updateNames()">
+            <h3>Hosté (HEX)</h3>
+            <input type="text" id="in-name-away" value="HOSTÉ" oninput="updateSettings()">
+            <input type="text" id="in-hex-away" value="#e74c3c" placeholder="#HEX" oninput="updateSettings()">
             <button class="btn-blue" onclick="changeScore('away', 1)">GÓL +</button>
-            <div class="penalty-admin-ctrl">
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:4px">
-                    <button class="btn-blue" onclick="addPenalty('away', 2)">2M</button>
-                    <button class="btn-blue" onclick="addPenalty('away', 4)">4M</button>
-                    <button class="btn-blue" onclick="addPenalty('away', 5)">5M</button>
-                </div>
-                <div id="ctrl-list-away"></div>
+            <button class="btn-minus" onclick="changeScore('away', -1)">ODEBRAT GÓL -</button>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px">
+                <button class="btn-blue" onclick="addPenalty('away', 2)">2 MIN</button>
+                <button class="btn-blue" onclick="addPenalty('away', 5)">5 MIN</button>
             </div>
-            <div class="so-admin-ctrl">
-                <div style="display:flex; gap:5px"><button class="btn-start" style="flex:1" onclick="addSO('away', 'goal')">GÓL</button><button class="btn-stop" style="flex:1" onclick="addSO('away', 'miss')">X</button></div>
-                <button onclick="resetSO('away')" style="font-size:10px; background:none; color:gray; border:1px solid #444; margin-top:5px">RESET NÁJEZDŮ</button>
+            <div id="ctrl-list-away" class="penalty-ctrl-list"></div>
+            <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
+                <button class="btn-start" style="flex:1" onclick="addSO('away', 'goal')">GÓL</button>
+                <button class="btn-stop" style="flex:1" onclick="addSO('away', 'miss')">X</button>
             </div>
-            <button class="btn-blue" onclick="changeScore('away', -1)" style="font-size:10px; opacity:0.5; margin-top:auto">-1 BOD</button>
         </div>
     </div>
 
@@ -210,52 +205,67 @@
         let scoreHome = 0, scoreAway = 0, penaltiesHome = [], penaltiesAway = [], soHome = [], soAway = [];
         let isTimeout = false, savedGameTime = 0;
 
-        function updateNames() {
+        function updateSettings() {
             document.getElementById('name-home-display').innerText = document.getElementById('in-name-home').value;
             document.getElementById('name-away-display').innerText = document.getElementById('in-name-away').value;
-            
-            document.documentElement.style.setProperty('--bg-blue-home', document.getElementById('in-color-home').value);
-            document.documentElement.style.setProperty('--bg-blue-away', document.getElementById('in-color-away').value);
+            document.documentElement.style.setProperty('--bg-home', document.getElementById('in-hex-home').value);
+            document.documentElement.style.setProperty('--bg-away', document.getElementById('in-hex-away').value);
         }
-
-        function toggleBoard() { document.getElementById('scoreboard-wrapper').classList.toggle('hidden'); }
 
         function setPeriod(p) {
             document.getElementById('disp-period').innerText = p;
             document.body.className = (p === 'SO') ? 'mode-so' : '';
             
-            if (p === 'OT') {
-                timeLeft = 5 * 60 * 1000;
-                document.getElementById('in-min').value = 5;
-                document.getElementById('in-sec').value = 0;
-            } else if (p === '1' || p === '2' || p === '3') {
-                timeLeft = 20 * 60 * 1000;
-                document.getElementById('in-min').value = 20;
-                document.getElementById('in-sec').value = 0;
-            }
+            // Zobrazení ovládání pro SO
+            const isSO = (p === 'SO');
+            document.querySelectorAll('.so-admin-ctrl').forEach(el => el.style.display = isSO ? 'flex' : 'none');
+            document.getElementById('so-reset-container').style.display = isSO ? 'block' : 'none';
 
+            if (p === 'OT') timeLeft = 5 * 60 * 1000;
+            else if (['1','2','3'].includes(p)) timeLeft = 20 * 60 * 1000;
+            
             const btns = document.querySelectorAll('#p-selector button');
             btns.forEach(btn => btn.classList.toggle('active', btn.innerText === p));
             updateDisplay();
         }
 
-        function formatMainTime(ms) {
-            if (ms < 60000 || isTimeout) {
-                let s = Math.floor(ms / 1000);
-                let d1 = Math.floor((ms % 1000) / 100);
-                return `${s}.${d1}`;
+        function toggleTimer() {
+            const btn = document.getElementById('mainBtn');
+            if (!isRunning) {
+                isRunning = true; lastTs = performance.now();
+                requestAnimationFrame(tick);
+                btn.innerText = "STOP"; btn.className = "btn-stop";
+            } else {
+                isRunning = false; btn.innerText = "START"; btn.className = "btn-start";
             }
-            let ts = Math.ceil(ms / 1000);
-            return `${Math.floor(ts / 60)}:${(ts % 60).toString().padStart(2, '0')}`;
         }
 
-        function formatPenaltyTime(ms) {
-            let ts = Math.ceil(ms / 1000);
-            return `${Math.floor(ts / 60)}:${(ts % 60).toString().padStart(2, '0')}`;
+        function tick(ts) {
+            if (!isRunning) return;
+            let d = ts - lastTs; lastTs = ts;
+            timeLeft = Math.max(0, timeLeft - d);
+            if (!isTimeout) {
+                [penaltiesHome, penaltiesAway].forEach(l => l.forEach(p => p.remaining -= d));
+                penaltiesHome = penaltiesHome.filter(p => p.remaining > 0);
+                penaltiesAway = penaltiesAway.filter(p => p.remaining > 0);
+            }
+            updateDisplay();
+            if (timeLeft <= 0) {
+                if (isTimeout) endTimeout();
+                else { isRunning = false; document.getElementById('mainBtn').innerText = "START"; document.getElementById('mainBtn').className = "btn-start"; }
+            } else { requestAnimationFrame(tick); }
         }
 
         function updateDisplay() {
-            document.getElementById('disp-time').innerText = formatMainTime(timeLeft);
+            let ms = timeLeft;
+            if (ms < 60000 || isTimeout) {
+                let s = Math.floor(ms / 1000);
+                let d1 = Math.floor((ms % 1000) / 100);
+                document.getElementById('disp-time').innerText = `${s}.${d1}`;
+            } else {
+                let ts = Math.ceil(ms / 1000);
+                document.getElementById('disp-time').innerText = `${Math.floor(ts / 60)}:${(ts % 60).toString().padStart(2, '0')}`;
+            }
             document.getElementById('disp-score-home').innerText = scoreHome;
             document.getElementById('disp-score-away').innerText = scoreAway;
             renderPen('home'); renderPen('away');
@@ -269,9 +279,11 @@
             sb.innerHTML = ''; ctrl.innerHTML = '';
             list.forEach((p, i) => {
                 const div = document.createElement('div'); div.className = 'penalty-row';
-                div.innerText = formatPenaltyTime(p.remaining); sb.appendChild(div);
-                const c = document.createElement('div'); c.style.display="flex"; c.style.justifyContent="space-between"; c.style.marginTop="5px";
-                c.innerHTML = `<span style="font-size:10px">${formatPenaltyTime(p.remaining)}</span><button onclick="remPen('${t}',${i})" style="background:red; color:white; border:none; padding:0 4px; border-radius:3px">X</button>`;
+                let pts = Math.ceil(p.remaining / 1000);
+                div.innerText = `${Math.floor(pts / 60)}:${(pts % 60).toString().padStart(2, '0')}`;
+                sb.appendChild(div);
+                const c = document.createElement('div');
+                c.innerHTML = `Trest ${i+1}: ${div.innerText} <button onclick="remPen('${t}',${i})" style="color:red; background:none; border:none; cursor:pointer">X</button>`;
                 ctrl.appendChild(c);
             });
         }
@@ -304,40 +316,14 @@
             updateDisplay();
         }
 
-        function toggleTimer() {
-            const btn = document.getElementById('mainBtn');
-            if (!isRunning) {
-                isRunning = true; lastTs = performance.now();
-                requestAnimationFrame(tick);
-                btn.innerText = "STOP"; btn.className = "btn-stop";
-            } else {
-                isRunning = false; btn.innerText = "START"; btn.className = "btn-start";
-            }
-        }
-
-        function tick(ts) {
-            if (!isRunning) return;
-            let d = ts - lastTs; lastTs = ts;
-            timeLeft = Math.max(0, timeLeft - d);
-            if (!isTimeout) {
-                [penaltiesHome, penaltiesAway].forEach(l => l.forEach(p => p.remaining -= d));
-                penaltiesHome = penaltiesHome.filter(p => p.remaining > 0);
-                penaltiesAway = penaltiesAway.filter(p => p.remaining > 0);
-            }
-            updateDisplay();
-            if (timeLeft <= 0) {
-                if (isTimeout) endTimeout();
-                else { isRunning = false; document.getElementById('mainBtn').innerText = "START"; document.getElementById('mainBtn').className = "btn-start"; }
-            } else { requestAnimationFrame(tick); }
-        }
-
         function changeScore(t, v) { if(t==='home') scoreHome=Math.max(0,scoreHome+v); else scoreAway=Math.max(0,scoreAway+v); updateDisplay(); }
         function setManualTime() { timeLeft = (parseInt(document.getElementById('in-min').value || 0) * 60 + parseInt(document.getElementById('in-sec').value || 0)) * 1000; updateDisplay(); }
         function addPenalty(t, m) { const l=(t==='home')?penaltiesHome:penaltiesAway; if(l.length < 2) l.push({remaining:m*60000}); updateDisplay(); }
         function remPen(t, i) { if(t==='home') penaltiesHome.splice(i,1); else penaltiesAway.splice(i,1); updateDisplay(); }
         function addSO(t, res) { if(t==='home') soHome.push(res); else soAway.push(res); updateDisplay(); }
-        function resetSO(t) { if(t==='home') soHome=[]; else soAway=[]; updateDisplay(); }
+        function resetSO() { soHome = []; soAway = []; updateDisplay(); }
 
+        updateSettings();
         updateDisplay();
     </script>
 </body>
