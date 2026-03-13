@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Hokejová Časomíra PRO - AUTO FLOW</title>
+    <style>
+        :root {
+            --bg-home: #1b89e3;
+            --bg-away: #e74c3c;
+            --bg-black: #000;
+            --dot-goal: #2ecc71;
+            --dot-miss: #e74c3c;
+            --board-height: 85px;
+        }
+
+        body {
+            font-family: "Arial Black", sans-serif;
+            background-color: transparent;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        #scoreboard-wrapper { 
+            width: 100%; 
+            max-width: 1100px; 
+            margin-bottom: 150px; 
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s;
+            transform-origin: top;
+        }
+        
+        .hidden-ui { transform: translateY(-200px); opacity: 0; }
+
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            height: var(--board-height);
+            background: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border-radius: 6px;
+            overflow: visible;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .box { display: flex; align-items: center; justify-content: center; text-align: center; }
+        
+        .team { width: 250px; color: white; font-size: 36px; position: relative; text-transform: uppercase; }
+        #box-home { background-color: var(--bg-home); }
+        #box-away { background-color: var(--bg-away); }
+        
+        .score { width: 85px; font-size: 55px; background: #fff; font-weight: 900; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+        .period-box { width: 85px; height: 100%; background: #fff; color: #000; font-size: 45px; font-weight: 900; border-right: 1px solid #eee; }
+        
+        .center-display { width: 220px; background: #fff; display: flex; position: relative; }
+        .timer-box { width: 100%; font-size: 55px; font-variant-numeric: tabular-nums; font-weight: 900; color: #000; }
+        .timer-break { color: #f39c12 !important; } /* Oranžová pro přestávku */
+        
+        .so-display { display: none; flex-direction: column; justify-content: center; align-items: center; width: 100%; gap: 8px; }
+        .so-row { display: flex; gap: 6px; }
+        .dot { width: 16px; height: 16px; border-radius: 50%; background: #ddd; border: 1px solid #aaa; }
+        .dot.goal { background: var(--dot-goal); border-color: #27ae60; }
+        .dot.miss { background: var(--dot-miss); border-color: #c0392b; }
+        
+        .mode-so .timer-box, .mode-so .period-box { display: none; }
+        .mode-so .so-display { display: flex; }
+
+        .penalty-area { position: absolute; top: 100%; left: 0; width: 100%; }
+        #penalties-home { background-color: var(--bg-home); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+        #penalties-away { background-color: var(--bg-away); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+        
+        .penalty-row { height: 55px; border-top: 2px solid rgba(255,255,255,0.3); font-size: 40px; display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; }
+
+        .admin-panel {
+            background: #1a1a1a; padding: 20px; border-radius: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; max-width: 950px; color: white; border: 2px solid #333;
+        }
+        .admin-group { background: #252525; padding: 12px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
+        h3 { margin: 0; font-size: 11px; color: #888; text-transform: uppercase; }
+        input { background: #333; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; text-align: center; }
+        button { cursor: pointer; padding: 10px; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-blue { background: #1b89e3; color: white; }
+        .btn-start { background: #2ecc71; color: white; }
+        .btn-stop { background: #e74c3c; color: white; }
+        .btn-timeout { background: #f39c12; color: white; }
+        .btn-hide { background: #95a5a6; color: black; }
+        .btn-minus { background: #444; color: #bbb; font-size: 10px; }
+        .btn-reset-so { background: #8e44ad; color: white; font-size: 11px; margin-top: 5px; }
+        
+        .period-selector { display: flex; gap: 4px; }
+        .period-selector button { flex: 1; padding: 8px 0; background: #444; color: white; font-size: 12px; }
+        .period-selector button.active { background: #1b89e3; }
+        .penalty-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+        .penalty-ctrl-list { font-size: 11px; margin-top: 5px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div id="scoreboard-wrapper">
+        <div class="scoreboard">
+            <div class="box team" id="box-home">
+                <span id="name-home-display">DOMÁCÍ</span>
+                <div id="penalties-home" class="penalty-area"></div>
+            </div>
+            <div class="box score" id="disp-score-home">0</div>
+            <div class="box score" id="disp-score-away">0</div>
+            <div class="box team" id="box-away">
+                <span id="name-away-display">HOSTÉ</span>
+                <div id="penalties-away" class="penalty-area"></div>
+            </div>
+            <div class="box period-box" id="disp-period">1</div>
+            <div class="box center-display">
+                <div class="box timer-box" id="disp-time">05:00</div>
+                <div class="so-display">
+                    <div class="so-row" id="so-dots-home"></div>
+                    <div class="so-row" id="so-dots-away"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-panel">
+        <div class="admin-group">
+            <h3>Systém</h3>
+            <button class="btn-hide" onclick="toggleVisibility()">SKRÝT / ZOBRAZIT GRAFIKU</button>
+            <div class="period-selector" id="p-selector">
+                <button onclick="setPeriod('1')" class="active">1</button>
+                <button onclick="setPeriod('2')">2</button>
+                <button onclick="setPeriod('3')">3</button>
+                <button onclick="setPeriod('OT')">OT</button>
+                <button onclick="setPeriod('SO')">SO</button>
+            </div>
+            <button id="mainBtn" class="btn-start" onclick="toggleTimer()">START / STOP</button>
+            <button id="timeoutBtn" class="btn-timeout" onclick="triggerTimeout()">TIMEOUT (25s)</button>
+            <div style="display:flex; gap:4px;">
+                <input type="number" id="in-min" value="5" style="width:45%">
+                <input type="number" id="in-sec" value="0" style="width:45%">
+            </div>
+            <button class="btn-blue" onclick="setManualTime()" style="font-size:11px">NASTAVIT ČAS</button>
+            <div id="so-reset-container" style="display:none">
+                <button class="btn-reset-so" onclick="resetSO()" style="width:100%">RESET NÁJEZDŮ ↺</button>
+            </div>
+        </div>
+
+        <div class="admin-group">
+            <h3>Domácí</h3>
+            <input type="text" id="in-name-home" value="DOMÁCÍ" oninput="updateSettings()">
+            <input type="text" id="in-hex-home" value="#1b89e3" oninput="updateSettings()">
+            <button class="btn-blue" onclick="changeScore('home', 1)">GÓL +</button>
+            <button class="btn-minus" onclick="changeScore('home', -1)">ODEBRAT GÓL -</button>
+            <div class="penalty-grid">
+                <button class="btn-blue" onclick="addPenalty('home', 2)">2M</button>
+                <button class="btn-blue" onclick="addPenalty('home', 4)">4M</button>
+                <button class="btn-blue" onclick="addPenalty('home', 5)">5M</button>
+            </div>
+            <div id="ctrl-list-home" class="penalty-ctrl-list"></div>
+            <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
+                <button class="btn-start" style="flex:1" onclick="addSO('home', 'goal')">GÓL</button>
+                <button class="btn-stop" style="flex:1" onclick="addSO('home', 'miss')">X</button>
+            </div>
+        </div>
+
+        <div class="admin-group">
+            <h3>Hosté</h3>
+            <input type="text" id="in-name-away" value="HOSTÉ" oninput="updateSettings()">
+            <input type="text" id="in-hex-away" value="#e74c3c" oninput="updateSettings()">
+            <button class="btn-blue" onclick="changeScore('away', 1)">GÓL +</button>
+            <button class="btn-minus" onclick="changeScore('away', -1)">ODEBRAT GÓL -</button>
+            <div class="penalty-grid">
+                <button class="btn-blue" onclick="addPenalty('away', 2)">2M</button>
+                <button class="btn-blue" onclick="addPenalty('away', 4)">4M</button>
+                <button class="btn-blue" onclick="addPenalty('away', 5)">5M</button>
+            </div>
+            <div id="ctrl-list-away" class="penalty-ctrl-list"></div>
+            <div class="so-admin-ctrl" style="display:none; gap:5px; margin-top:5px">
+                <button class="btn-start" style="flex:1" onclick="addSO('away', 'goal')">GÓL</button>
+                <button class="btn-stop" style="flex:1" onclick="addSO('away', 'miss')">X</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timeLeft = 300000, isRunning = false, lastTs = 0, isVisible = true;
+        let scoreHome = 0, scoreAway = 0, penaltiesHome = [], penaltiesAway = [], soHome = [], soAway = [];
+        let isTimeout = false, savedGameTime = 0, isBreak = false;
+
+        function playHorn() {
+            const siren = new Audio('https://actions.google.com/sounds/v1/alarms/air_horn_so_loud.ogg');
+            siren.play().catch(e => console.log("Audio play blocked"));
+        }
+
+        function toggleVisibility() {
+            isVisible = !isVisible;
+            document.getElementById('scoreboard-wrapper').classList.toggle('hidden-ui', !isVisible);
+        }
+
+        function updateSettings() {
+            document.getElementById('name-home-display').innerText = document.getElementById('in-name-home').value;
+            document.getElementById('name-away-display').innerText = document.getElementById('in-name-away').value;
+            document.documentElement.style.setProperty('--bg-home', document.getElementById('in-hex-home').value);
+            document.documentElement.style.setProperty('--bg-away', document.getElementById('in-hex-away').value);
+        }
+
+        function setPeriod(p) {
+            isBreak = false;
+            document.getElementById('disp-period').innerText = p;
+            document.getElementById('disp-time').classList.remove('timer-break');
+            document.body.className = (p === 'SO') ? 'mode-so' : '';
+            if(p === 'SO') {
+                document.querySelectorAll('.so-admin-ctrl').forEach(el => el.style.display = 'flex');
+                document.getElementById('so-reset-container').style.display = 'block';
+            } else {
+                document.querySelectorAll('.so-admin-ctrl').forEach(el => el.style.display = 'none');
+                document.getElementById('so-reset-container').style.display = 'none';
+                timeLeft = 300000; // 5 minut
+            }
+            const btns = document.querySelectorAll('#p-selector button');
+            btns.forEach(btn => btn.classList.toggle('active', btn.innerText === p));
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('mainBtn');
+            if (!isRunning) {
+                isRunning = true; lastTs = performance.now();
+                requestAnimationFrame(tick);
+                btn.innerText = "STOP"; btn.className = "btn-stop";
+            } else {
+                isRunning = false; btn.innerText = "START"; btn.className = "btn-start";
+            }
+        }
+
+        function tick(ts) {
+            if (!isRunning) return;
+            let d = ts - lastTs; lastTs = ts;
+            timeLeft = Math.max(0, timeLeft - d);
+            
+            if (!isTimeout && !isBreak) {
+                [penaltiesHome, penaltiesAway].forEach(l => l.forEach(p => p.remaining -= d));
+                penaltiesHome = penaltiesHome.filter(p => p.remaining > 0);
+                penaltiesAway = penaltiesAway.filter(p => p.remaining > 0);
+            }
+            
+            updateDisplay();
+
+            if (timeLeft <= 0) {
+                playHorn();
+                
+                if (isTimeout) {
+                    isRunning = false; endTimeout();
+                } else if (!isBreak && document.getElementById('disp-period').innerText !== 'SO') {
+                    // KONEC TŘETINY -> AUTOMATICKY START PŘESTÁVKY
+                    isBreak = true;
+                    timeLeft = 120000; // 2 minuty přestávka
+                    document.getElementById('disp-time').classList.add('timer-break');
+                    // Nepřerušujeme isRunning, čas běží dál do přestávky
+                    requestAnimationFrame(tick);
+                } else {
+                    // KONEC PŘESTÁVKY NEBO ZÁPASU
+                    isRunning = false;
+                    isBreak = false;
+                    document.getElementById('disp-time').classList.remove('timer-break');
+                    document.getElementById('mainBtn').innerText = "START";
+                    document.getElementById('mainBtn').className = "btn-start";
+                    // Připravit další třetinu
+                    if (!isTimeout) timeLeft = 300000; 
+                    updateDisplay();
+                }
+            } else { 
+                requestAnimationFrame(tick); 
+            }
+        }
+
+        function updateDisplay() {
+            let ms = timeLeft;
+            const timerEl = document.getElementById('disp-time');
+            if (ms < 60000 || isTimeout) {
+                let s = Math.floor(ms / 1000);
+                let d1 = Math.floor((ms % 1000) / 100);
+                timerEl.innerText = `${s}.${d1}`;
+            } else {
+                let ts = Math.ceil(ms / 1000);
+                timerEl.innerText = `${Math.floor(ts / 60)}:${(ts % 60).toString().padStart(2, '0')}`;
+            }
+            document.getElementById('disp-score-home').innerText = scoreHome;
+            document.getElementById('disp-score-away').innerText = scoreAway;
+            renderPen('home'); renderPen('away');
+            renderSO();
+        }
+
+        function renderPen(t) {
+            const list = (t === 'home') ? penaltiesHome : penaltiesAway;
+            const sb = document.getElementById('penalties-' + t);
+            const ctrl = document.getElementById('ctrl-list-' + t);
+            sb.innerHTML = ''; ctrl.innerHTML = '';
+            list.forEach((p, i) => {
+                const div = document.createElement('div'); div.className = 'penalty-row';
+                let pts = Math.ceil(p.remaining / 1000);
+                div.innerText = `${Math.floor(pts / 60)}:${(pts % 60).toString().padStart(2, '0')}`;
+                sb.appendChild(div);
+                const c = document.createElement('div');
+                c.innerHTML = `Trest ${i+1}: ${div.innerText} <button onclick="remPen('${t}',${i})" style="color:red; background:none; border:none; cursor:pointer">X</button>`;
+                ctrl.appendChild(c);
+            });
+        }
+
+        function renderSO() {
+            const draw = (id, arr) => {
+                const el = document.getElementById(id); el.innerHTML = '';
+                for(let i=0; i<Math.max(5, arr.length); i++) {
+                    const d = document.createElement('div'); d.className = 'dot' + (arr[i] ? ' ' + arr[i] : '');
+                    el.appendChild(d);
+                }
+            };
+            draw('so-dots-home', soHome); draw('so-dots-away', soAway);
+        }
+
+        function triggerTimeout() {
+            if (!isTimeout) {
+                isTimeout = true; savedGameTime = timeLeft; timeLeft = 25000;
+                document.getElementById('timeoutBtn').innerText = "ZRUŠIT";
+                document.getElementById('timeoutBtn').className = "btn-stop";
+                if (!isRunning) toggleTimer();
+            } else { endTimeout(); }
+        }
+
+        function endTimeout() {
+            isTimeout = false; timeLeft = savedGameTime;
+            document.getElementById('timeoutBtn').innerText = "TIMEOUT (25s)";
+            document.getElementById('timeoutBtn').className = "btn-timeout";
+            isRunning = false;
+            document.getElementById('mainBtn').innerText = "START";
+            document.getElementById('mainBtn').className = "btn-start";
+            updateDisplay();
+        }
+
+        function changeScore(t, v) { if(t==='home') scoreHome=Math.max(0,scoreHome+v); else scoreAway=Math.max(0,scoreAway+v); updateDisplay(); }
+        function setManualTime() { timeLeft = (parseInt(document.getElementById('in-min').value || 0) * 60 + parseInt(document.getElementById('in-sec').value || 0)) * 1000; isBreak = false; updateDisplay(); }
+        function addPenalty(t, m) { const l=(t==='home')?penaltiesHome:penaltiesAway; if(l.length < 2) l.push({remaining:m*60000}); updateDisplay(); }
+        function remPen(t, i) { if(t==='home') penaltiesHome.splice(i,1); else penaltiesAway.splice(i,1); updateDisplay(); }
+        function addSO(t, res) { if(t==='home') soHome.push(res); else soAway.push(res); updateDisplay(); }
+        function resetSO() { soHome = []; soAway = []; updateDisplay(); }
+
+        updateSettings();
+        updateDisplay();
+    </script>
+</body>
+</html>
