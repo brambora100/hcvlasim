@@ -2,12 +2,11 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>MetaSport ULTRA - Konfigurovatelné Intro</title>
+    <title>Hokejové Intro - Transparentní</title>
     <style>
         :root {
-            /* Výchozí barvy - budou přepsány skriptem */
             --home-color: #1a6bb3;
-            --away-color: #e74c3c;
+            --away-color: #f1c40f;
             --info-bg: #114b7d;
             --font-main: "Arial Black", sans-serif;
             --speed: 0.8s;
@@ -20,7 +19,8 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: #222; /* Pozadí pro náhled, v OBS bude transparentní */
+            /* POZADÍ NASTAVENO NA PRŮHLEDNÉ */
+            background-color: transparent !important; 
             font-family: var(--font-main);
             overflow: hidden;
         }
@@ -84,7 +84,7 @@
             display: flex;
             height: 100px;
             width: 100%;
-            justify-content: center; /* Výstřel ze středu */
+            justify-content: center;
         }
 
         .panel {
@@ -98,7 +98,6 @@
             align-items: center;
         }
 
-        /* Barvy panelů */
         .home-bg { background: var(--home-color); border-left: 8px solid white; z-index: 10; }
         .away-bg { background: var(--away-color); border-right: 8px solid white; z-index: 10; }
         .info-bg { background: var(--info-bg); z-index: 5; opacity: 0.95; }
@@ -106,7 +105,6 @@
         .active .main-w { width: 600px; }
         .active .sub-w { width: 350px; }
 
-        /* OBSAH */
         .content {
             transform: skew(20deg);
             width: 100%;
@@ -119,7 +117,6 @@
         }
         .active .content { opacity: 1; }
 
-        /* LOGA */
         .logo-box {
             position: absolute;
             top: 0;
@@ -138,12 +135,10 @@
         .r-pos { right: 0; }
         .logo-img { width: 75px; height: 75px; object-fit: contain; transform: skew(20deg); }
 
-        /* TEXTY */
         .team-name { font-size: 36px; text-transform: uppercase; margin: 0; letter-spacing: -1px; }
         .info-title { font-size: 18px; font-weight: 900; line-height: 1.1; }
         .info-sub { font-size: 13px; opacity: 0.8; font-family: sans-serif; text-transform: uppercase; }
 
-        /* ODLESK */
         .panel::after {
             content: '';
             position: absolute;
@@ -157,20 +152,20 @@
 <body>
 
 <div class="config-panel">
-    <h3>⚙️ MetaSport Editor</h3>
+    <h3>⚙️ EDITOR INTRA</h3>
     
     <div class="config-group">
         <label>Domácí Tým</label>
         <input type="text" id="in-home-name" value="HC Rytíři Vlašim">
         <input type="color" id="in-home-color" value="#1a6bb3">
-        <input type="text" id="in-home-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png" placeholder="URL loga">
+        <input type="text" id="in-home-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png">
     </div>
 
     <div class="config-group">
         <label>Hostující Tým</label>
         <input type="text" id="in-away-name" value="HC Lev Benešov">
-        <input type="color" id="in-away-color" value="#e74c3c">
-        <input type="text" id="in-away-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg" placeholder="URL loga">
+        <input type="color" id="in-away-color" value="#f1c40f">
+        <input type="text" id="in-away-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg">
     </div>
 
     <div class="config-group">
@@ -224,7 +219,6 @@
 
 <script>
     function updateAndShow() {
-        // Načtení hodnot z editoru
         const homeName = document.getElementById('in-home-name').value;
         const awayName = document.getElementById('in-away-name').value;
         const homeColor = document.getElementById('in-home-color').value;
@@ -233,7 +227,6 @@
         const homeLogo = document.getElementById('in-home-logo').value;
         const awayLogo = document.getElementById('in-away-logo').value;
         
-        // Aplikace do grafiky
         document.getElementById('disp-home-name').innerText = homeName;
         document.getElementById('disp-away-name').innerText = awayName;
         document.getElementById('disp-home-logo').src = homeLogo;
@@ -243,12 +236,10 @@
         document.getElementById('disp-stadion').innerText = document.getElementById('in-stadion').value;
         document.getElementById('disp-misto').innerText = document.getElementById('in-misto').value;
 
-        // Nastavení CSS proměnných
         document.documentElement.style.setProperty('--home-color', homeColor);
         document.documentElement.style.setProperty('--away-color', awayColor);
         document.documentElement.style.setProperty('--info-bg', infoColor);
 
-        // Spuštění animace
         const scene = document.getElementById('scene');
         const row1 = document.getElementById('row1');
         const row2 = document.getElementById('row2');
