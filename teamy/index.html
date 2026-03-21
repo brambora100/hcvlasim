@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Intro - Bez pozadí</title>
+    <title>Hokejové Intro - Full Editor</title>
     <style>
         :root {
             --home-color: #1a6bb3;
@@ -12,26 +12,29 @@
             --speed: 0.8s;
         }
 
-        body {
+        html, body {
             margin: 0;
+            padding: 0;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            /* TOTÁLNĚ PRŮHLEDNÉ */
-            background: none !important;
-            background-color: transparent !important; 
+            background: transparent !important;
+            background-color: rgba(0,0,0,0) !important;
             font-family: var(--font-main);
             overflow: hidden;
         }
 
-        /* KONFIGURAČNÍ PANEL */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* OVLÁDACÍ PANEL */
         .config-panel {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             color: white;
             padding: 15px;
             border-radius: 8px;
@@ -42,22 +45,24 @@
             font-family: sans-serif;
             font-size: 11px;
             border: 1px solid #444;
+            width: 350px;
         }
 
-        .config-panel h3 { grid-column: span 2; margin: 0 0 5px 0; color: #1a6bb3; }
-        .config-group { display: flex; flex-direction: column; gap: 2px; }
-        input { padding: 4px; border-radius: 3px; border: 1px solid #444; background: #222; color: white; }
+        .config-panel h3 { grid-column: span 2; margin: 0 0 5px 0; color: #1a6bb3; text-transform: uppercase; }
+        .config-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 5px; }
+        .config-panel input { padding: 5px; border-radius: 3px; border: 1px solid #444; background: #222; color: white; font-size: 11px; }
+        label { color: #aaa; font-size: 9px; text-transform: uppercase; }
         
         .admin-buttons {
             grid-column: span 2;
             display: flex;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 5px;
         }
 
         .btn {
             flex: 1;
-            padding: 8px;
+            padding: 10px;
             cursor: pointer;
             font-weight: bold;
             border: none;
@@ -75,7 +80,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));
+            filter: none !important; 
             visibility: hidden;
             opacity: 0;
         }
@@ -153,31 +158,31 @@
 <body>
 
 <div class="config-panel">
-    <h3>⚙️ EDITOR INTRA</h3>
+    <h3>⚙️ KONFIGURACE ZÁPASU</h3>
     
     <div class="config-group">
-        <label>Domácí</label>
-        <input type="text" id="in-home-name" value="HC Rytíři Vlašim">
-        <input type="color" id="in-home-color" value="#1a6bb3">
-        <input type="text" id="in-home-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png">
+        <label>Domácí (Jméno, Barva, Logo URL)</label>
+        <input type="text" id="in-h-name" value="HC Rytíři Vlašim">
+        <input type="color" id="in-h-color" value="#1a6bb3">
+        <input type="text" id="in-h-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png">
     </div>
 
     <div class="config-group">
-        <label>Hosté</label>
-        <input type="text" id="in-away-name" value="HC Lev Benešov">
-        <input type="color" id="in-away-color" value="#f1c40f">
-        <input type="text" id="in-away-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg">
+        <label>Hosté (Jméno, Barva, Logo URL)</label>
+        <input type="text" id="in-a-name" value="HC Lev Benešov">
+        <input type="color" id="in-a-color" value="#f1c40f">
+        <input type="text" id="in-a-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg">
     </div>
 
     <div class="config-group">
-        <label>Zápas</label>
+        <label>Informace o lize</label>
         <input type="text" id="in-liga" value="KRAJSKÁ LIGA">
-        <input type="text" id="in-detail" value="20. KOLO • 18:00">
+        <input type="text" id="in-kolo" value="20. KOLO • 18:00">
         <input type="color" id="in-info-color" value="#114b7d">
     </div>
 
     <div class="config-group">
-        <label>Stadion</label>
+        <label>Místo konání</label>
         <input type="text" id="in-stadion" value="ZIMNÍ STADION">
         <input type="text" id="in-misto" value="VLAŠIM">
     </div>
@@ -191,14 +196,14 @@
 <div id="scene" class="scene">
     <div class="row" id="row1">
         <div class="panel home-bg main-w">
-            <div class="logo-box l-pos"><img id="disp-home-logo" src="" class="logo-img"></div>
+            <div class="logo-box l-pos"><img id="disp-h-logo" src="" class="logo-img"></div>
             <div class="content" style="padding-left: 120px;">
-                <h1 id="disp-home-name" class="team-name"></h1>
+                <h1 id="disp-h-name" class="team-name"></h1>
             </div>
         </div>
         <div class="panel info-bg sub-w">
             <div class="content" style="padding-left: 30px;">
-                <div class="info-title"><span id="disp-liga"></span><br><span id="disp-detail" class="info-sub"></span></div>
+                <div class="info-title"><span id="disp-liga"></span><br><span id="disp-kolo" class="info-sub"></span></div>
             </div>
         </div>
     </div>
@@ -211,28 +216,33 @@
         </div>
         <div class="panel away-bg main-w">
             <div class="content" style="padding-right: 120px; justify-content: flex-end; text-align: right;">
-                <h1 id="disp-away-name" class="team-name"></h1>
+                <h1 id="disp-a-name" class="team-name"></h1>
             </div>
-            <div class="logo-box r-pos"><img id="disp-away-logo" src="" class="logo-img"></div>
+            <div class="logo-box r-pos"><img id="disp-a-logo" src="" class="logo-img"></div>
         </div>
     </div>
 </div>
 
 <script>
     function updateAndShow() {
-        document.getElementById('disp-home-name').innerText = document.getElementById('in-home-name').value;
-        document.getElementById('disp-away-name').innerText = document.getElementById('in-away-name').value;
-        document.getElementById('disp-home-logo').src = document.getElementById('in-home-logo').value;
-        document.getElementById('disp-away-logo').src = document.getElementById('in-away-logo').value;
+        // Texty
+        document.getElementById('disp-h-name').innerText = document.getElementById('in-h-name').value;
+        document.getElementById('disp-a-name').innerText = document.getElementById('in-a-name').value;
         document.getElementById('disp-liga').innerText = document.getElementById('in-liga').value;
-        document.getElementById('disp-detail').innerText = document.getElementById('in-detail').value;
+        document.getElementById('disp-kolo').innerText = document.getElementById('in-kolo').value;
         document.getElementById('disp-stadion').innerText = document.getElementById('in-stadion').value;
         document.getElementById('disp-misto').innerText = document.getElementById('in-misto').value;
 
-        document.documentElement.style.setProperty('--home-color', document.getElementById('in-home-color').value);
-        document.documentElement.style.setProperty('--away-color', document.getElementById('in-away-color').value);
+        // Loga
+        document.getElementById('disp-h-logo').src = document.getElementById('in-h-logo').value;
+        document.getElementById('disp-a-logo').src = document.getElementById('in-a-logo').value;
+
+        // Barvy
+        document.documentElement.style.setProperty('--home-color', document.getElementById('in-h-color').value);
+        document.documentElement.style.setProperty('--away-color', document.getElementById('in-a-color').value);
         document.documentElement.style.setProperty('--info-bg', document.getElementById('in-info-color').value);
 
+        // Animace
         const scene = document.getElementById('scene');
         scene.classList.add('visible');
         setTimeout(() => {
