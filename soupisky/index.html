@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Hokejová Soupiska - Pro Studio</title>
+    <style>
+        :root {
+            --home-color: #1a6bb3;
+            --away-color: #f1c40f;
+            --panel-bg: rgba(10, 25, 45, 0.98);
+            --font: "Arial Black", sans-serif;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: transparent; 
+            font-family: var(--font);
+            color: white;
+            overflow: hidden;
+        }
+
+        /* OVLÁDACÍ PANEL */
+        .admin-panel {
+            position: absolute;
+            top: 10px; left: 10px;
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+            width: 300px;
+            border: 1px solid #444;
+            font-family: sans-serif; font-size: 11px;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .config-sec { margin-bottom: 12px; padding: 10px; background: #111; border-radius: 4px; border-left: 4px solid #444; }
+        .admin-panel input, .admin-panel textarea { 
+            width: 90%; margin-bottom: 5px; background: #222; 
+            color: #fff; border: 1px solid #555; padding: 5px;
+        }
+        .btn-group { display: flex; gap: 5px; position: sticky; bottom: 0; background: #000; padding-top: 10px; }
+        .btn { flex: 1; padding: 10px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; color: white; text-transform: uppercase; }
+
+        /* GRAFICKÁ KARTA */
+        .lineup-card {
+            width: 1250px;
+            display: flex;
+            flex-direction: column;
+            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.9));
+            transform: scale(0.9) translateY(40px);
+            opacity: 0;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            visibility: hidden;
+        }
+        .lineup-card.active { visibility: visible; opacity: 1; transform: scale(1) translateY(0); }
+
+        .header {
+            display: flex;
+            align-items: center;
+            background: var(--current-color);
+            padding: 15px 45px;
+            border-bottom: 6px solid white;
+        }
+        .team-logo { width: 85px; height: 85px; background: white; padding: 5px; border-radius: 4px; object-fit: contain; margin-right: 25px; }
+        .header h2 { margin: 0; font-size: 48px; text-transform: uppercase; letter-spacing: -1px; }
+
+        .body {
+            background: var(--panel-bg);
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1.2fr;
+            gap: 30px;
+            padding: 40px 50px;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .col { opacity: 0; transform: translateY(15px); transition: 0.5s 0.3s; }
+        .active .col { opacity: 1; transform: translateY(0); }
+
+        .cat-label {
+            color: var(--current-color);
+            font-size: 15px;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 5px;
+        }
+
+        .player {
+            display: flex;
+            font-size: 19px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 3px 0;
+        }
+        .num { width: 45px; color: var(--current-color); font-weight: 900; }
+        .name { text-transform: uppercase; white-space: nowrap; }
+    </style>
+</head>
+<body>
+
+<div class="admin-panel">
+    <h3 style="margin-top:0">NASTAVENÍ SOUPISKY</h3>
+    
+    <div class="config-sec">
+        <strong>DOMÁCÍ (VLAŠIM)</strong>
+        <input type="text" id="h-name" value="HC RYTÍŘI VLAŠIM">
+        <input type="color" id="h-color" value="#1a6bb3">
+        <input type="text" id="h-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png">
+        <textarea id="h-players">
+BRANKÁŘI:
+- FORMÁNEK Michael
+1 TICHON Nir
+          
+OBRÁNCI:
+91 BENEŠ Jiří
+26 BERAN Václav
+14 HOLADA Ladislav
+22 KUŽEL Lukáš
+9 PESSR Jan
+12 PESSR Vladislav
+13 PETRÁČEK Vojtěch
+24 ŘÍHA Martin
+72 VONDRÁČEK Tomáš
+15 ZELINGR Matyáš
+
+ÚTOČNÍCI:
+88 DVOŘÁK Štěpán
+10 FLORIÁN Dominik
+23 HEJNÝ Josef
+20 HERWIG Adam
+19 HOLAN Matyáš
+81 KOČÍ Marek
+25 KRATOCHVÍL Jiří
+21 KRONUS Jonáš
+17 PEJŠA Pavel
+4 PESSR Tomáš
+11 PETRŽILKA Jakub
+78 POLESNÝ Jan</textarea>
+    </div>
+
+    <div class="config-sec">
+        <strong>HOSTÉ (BENEŠOV)</strong>
+        <input type="text" id="a-name" value="HC LEV BENEŠOV">
+        <input type="color" id="a-color" value="#f1c40f">
+        <input type="text" id="a-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg">
+        <textarea id="a-players">
+BRANKÁŘI:
+- STAŠEK Jakub
+- ŠTĚPÁNEK Jan
+
+OBRÁNCI:
+- FEDOROČKO Ondřej
+- HÁVA Jiří
+- KOŘÁNEK Adam
+- KOTÝNEK Martin
+- PROCHÁZKA Radek
+- SUP Michal
+- ŠULC Michael
+- ZDERADIČKA Filip
+
+ÚTOČNÍCI:
+- BOREK Denis
+- BURDA Zdeněk
+- DUŠEK Pavel
+- HOLÁNEK Lukáš
+- KEJDANA Filip
+- KORBEL Vojtěch
+- KROHŇÁK Tomáš
+- MAREČEK Aleš
+- RŮŽHA Daniel
+- SLÁDEK Ondřej
+- STAREO David
+- ŠTĚTINA Martin</textarea>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn" style="background:#1a6bb3" onclick="render('home')">DOMÁCÍ</button>
+        <button class="btn" style="background:#f1c40f; color: black;" onclick="render('away')">HOSTÉ</button>
+        <button class="btn" style="background:#444" onclick="hide()">SKRÝT</button>
+    </div>
+</div>
+
+<div id="board" class="lineup-card">
+    <div class="header">
+        <img id="disp-logo" src="" class="team-logo">
+        <h2 id="disp-name"></h2>
+    </div>
+    
+    <div class="body">
+        <div class="col">
+            <div class="cat-label">BRANKÁŘI</div>
+            <div id="box-gk"></div>
+        </div>
+        <div class="col">
+            <div class="cat-label">OBRÁNCI</div>
+            <div id="box-def"></div>
+        </div>
+        <div class="col">
+            <div class="cat-label">ÚTOČNÍCI</div>
+            <div id="box-off"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function parseHockey(text, category) {
+        const lines = text.split('\n');
+        let capturing = false;
+        let html = '';
+        
+        lines.forEach(line => {
+            const upperLine = line.toUpperCase();
+            if(upperLine.includes(category)) { capturing = true; return; }
+            if(upperLine.includes(':') && !upperLine.includes(category)) { capturing = false; }
+            
+            if(capturing && line.trim() !== '') {
+                const parts = line.trim().split(' ');
+                const num = parts[0] === '-' ? '' : parts.shift();
+                if(parts[0] === '-') parts.shift();
+                const name = parts.join(' ');
+                html += `<div class="player"><div class="num">${num}</div><div class="name">${name}</div></div>`;
+            }
+        });
+        return html;
+    }
+
+    function render(side) {
+        const prefix = side === 'home' ? 'h' : 'a';
+        const teamName = document.getElementById(`${prefix}-name`).value;
+        const color = document.getElementById(`${prefix}-color`).value;
+        const logo = document.getElementById(`${prefix}-logo`).value;
+        const playersText = document.getElementById(`${prefix}-players`).value;
+
+        document.getElementById('disp-name').innerText = teamName;
+        document.getElementById('disp-logo').src = logo;
+        document.documentElement.style.setProperty('--current-color', color);
+        
+        document.getElementById('box-gk').innerHTML = parseHockey(playersText, 'BRANKÁŘI');
+        document.getElementById('box-def').innerHTML = parseHockey(playersText, 'OBRÁNCI');
+        document.getElementById('box-off').innerHTML = parseHockey(playersText, 'ÚTOČNÍCI');
+
+        const board = document.getElementById('board');
+        board.classList.remove('active');
+        setTimeout(() => board.classList.add('active'), 50);
+    }
+
+    function hide() {
+        document.getElementById('board').classList.remove('active');
+    }
+</script>
+
+</body>
+</html>
