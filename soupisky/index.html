@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <title>Hokejová Soupiska - Pro Studio</title>
+    <title>Hokejová Soupiska - Transparentní</title>
     <style>
         :root {
             --home-color: #1a6bb3;
@@ -17,7 +17,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: transparent; 
+            /* POZADÍ ODEBRÁNO */
+            background-color: transparent !important; 
             font-family: var(--font);
             color: white;
             overflow: hidden;
@@ -50,7 +51,8 @@
             width: 1250px;
             display: flex;
             flex-direction: column;
-            filter: drop-shadow(0 30px 60px rgba(0,0,0,0.9));
+            /* STÍNY SNÍŽENY PRO LEPŠÍ PRŮHLEDNOST */
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
             transform: scale(0.9) translateY(40px);
             opacity: 0;
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
@@ -113,8 +115,10 @@
         <textarea id="h-players">
 BRANKÁŘI:
 - FORMÁNEK Michael
+2 HOLÁNEK Michal
 1 TICHON Nir
-          
+- ZRNO Tomáš
+
 OBRÁNCI:
 91 BENEŠ Jiří
 26 BERAN Václav
