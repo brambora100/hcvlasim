@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>MetaSport ULTRA - Konfigurovatelné Intro</title>
+    <style>
+        :root {
+            /* Výchozí barvy - budou přepsány skriptem */
+            --home-color: #1a6bb3;
+            --away-color: #e74c3c;
+            --info-bg: #114b7d;
+            --font-main: "Arial Black", sans-serif;
+            --speed: 0.8s;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #222; /* Pozadí pro náhled, v OBS bude transparentní */
+            font-family: var(--font-main);
+            overflow: hidden;
+        }
+
+        /* KONFIGURAČNÍ PANEL */
+        .config-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            z-index: 1000;
+            font-family: sans-serif;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+
+        .config-panel h3 { grid-column: span 2; margin: 0 0 5px 0; color: #1a6bb3; }
+        .config-group { display: flex; flex-direction: column; gap: 2px; }
+        input { padding: 4px; border-radius: 3px; border: none; }
+        
+        .admin-buttons {
+            grid-column: span 2;
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+        .btn-run { background: #2ecc71; color: white; }
+        .btn-hide { background: #e74c3c; color: white; }
+
+        /* GRAFIKA - SCÉNA */
+        .scene {
+            position: relative;
+            width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            filter: drop-shadow(0 25px 40px rgba(0,0,0,0.6));
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .scene.visible { visibility: visible; opacity: 1; }
+
+        .row {
+            display: flex;
+            height: 100px;
+            width: 100%;
+            justify-content: center; /* Výstřel ze středu */
+        }
+
+        .panel {
+            position: relative;
+            height: 100%;
+            width: 0;
+            transform: skew(-20deg);
+            transition: width var(--speed) cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Barvy panelů */
+        .home-bg { background: var(--home-color); border-left: 8px solid white; z-index: 10; }
+        .away-bg { background: var(--away-color); border-right: 8px solid white; z-index: 10; }
+        .info-bg { background: var(--info-bg); z-index: 5; opacity: 0.95; }
+
+        .active .main-w { width: 600px; }
+        .active .sub-w { width: 350px; }
+
+        /* OBSAH */
+        .content {
+            transform: skew(20deg);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            color: white;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s calc(var(--speed) - 0.2s);
+        }
+        .active .content { opacity: 1; }
+
+        /* LOGA */
+        .logo-box {
+            position: absolute;
+            top: 0;
+            width: 100px;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            transform: scale(0);
+            transition: transform 0.5s calc(var(--speed) + 0.1s) cubic-bezier(0.17, 0.67, 0.83, 1.67);
+        }
+        .active .logo-box { transform: scale(1); }
+        .l-pos { left: 0; }
+        .r-pos { right: 0; }
+        .logo-img { width: 75px; height: 75px; object-fit: contain; transform: skew(20deg); }
+
+        /* TEXTY */
+        .team-name { font-size: 36px; text-transform: uppercase; margin: 0; letter-spacing: -1px; }
+        .info-title { font-size: 18px; font-weight: 900; line-height: 1.1; }
+        .info-sub { font-size: 13px; opacity: 0.8; font-family: sans-serif; text-transform: uppercase; }
+
+        /* ODLESK */
+        .panel::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        }
+        .active .panel::after { animation: shine 4s infinite; }
+        @keyframes shine { 0% { left: -100%; } 15% { left: 200%; } 100% { left: 200%; } }
+    </style>
+</head>
+<body>
+
+<div class="config-panel">
+    <h3>⚙️ MetaSport Editor</h3>
+    
+    <div class="config-group">
+        <label>Domácí Tým</label>
+        <input type="text" id="in-home-name" value="HC Rytíři Vlašim">
+        <input type="color" id="in-home-color" value="#1a6bb3">
+        <input type="text" id="in-home-logo" value="https://hcvlasim.esports.cz/files/editor/Hlavni%20logo.png" placeholder="URL loga">
+    </div>
+
+    <div class="config-group">
+        <label>Hostující Tým</label>
+        <input type="text" id="in-away-name" value="HC Lev Benešov">
+        <input type="color" id="in-away-color" value="#e74c3c">
+        <input type="text" id="in-away-logo" value="https://brambora100.github.io/hcvlasim/benesov.svg" placeholder="URL loga">
+    </div>
+
+    <div class="config-group">
+        <label>Liga & Čas</label>
+        <input type="text" id="in-liga" value="KRAJSKÁ LIGA">
+        <input type="text" id="in-detail" value="20. KOLO • 18:00">
+        <input type="color" id="in-info-color" value="#114b7d">
+    </div>
+
+    <div class="config-group">
+        <label>Stadion & Místo</label>
+        <input type="text" id="in-stadion" value="ZIMNÍ STADION">
+        <input type="text" id="in-misto" value="VLAŠIM">
+    </div>
+
+    <div class="admin-buttons">
+        <button class="btn btn-run" onclick="updateAndShow()">ZOBRAZIT</button>
+        <button class="btn btn-hide" onclick="hideIntro()">SKRÝT</button>
+    </div>
+</div>
+
+<div id="scene" class="scene">
+    <div class="row" id="row1">
+        <div class="panel home-bg main-w">
+            <div class="logo-box l-pos"><img id="disp-home-logo" src="" class="logo-img"></div>
+            <div class="content" style="padding-left: 120px;">
+                <h1 id="disp-home-name" class="team-name"></h1>
+            </div>
+        </div>
+        <div class="panel info-bg sub-w">
+            <div class="content" style="padding-left: 30px;">
+                <div class="info-title"><span id="disp-liga"></span><br><span id="disp-detail" class="info-sub"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="row2">
+        <div class="panel info-bg sub-w" style="justify-content: flex-end;">
+            <div class="content" style="justify-content: flex-end; padding-right: 30px; text-align: right;">
+                <div class="info-title"><span id="disp-stadion"></span><br><span id="disp-misto" class="info-sub"></span></div>
+            </div>
+        </div>
+        <div class="panel away-bg main-w">
+            <div class="content" style="padding-right: 120px; justify-content: flex-end; text-align: right;">
+                <h1 id="disp-away-name" class="team-name"></h1>
+            </div>
+            <div class="logo-box r-pos"><img id="disp-away-logo" src="" class="logo-img"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateAndShow() {
+        // Načtení hodnot z editoru
+        const homeName = document.getElementById('in-home-name').value;
+        const awayName = document.getElementById('in-away-name').value;
+        const homeColor = document.getElementById('in-home-color').value;
+        const awayColor = document.getElementById('in-away-color').value;
+        const infoColor = document.getElementById('in-info-color').value;
+        const homeLogo = document.getElementById('in-home-logo').value;
+        const awayLogo = document.getElementById('in-away-logo').value;
+        
+        // Aplikace do grafiky
+        document.getElementById('disp-home-name').innerText = homeName;
+        document.getElementById('disp-away-name').innerText = awayName;
+        document.getElementById('disp-home-logo').src = homeLogo;
+        document.getElementById('disp-away-logo').src = awayLogo;
+        document.getElementById('disp-liga').innerText = document.getElementById('in-liga').value;
+        document.getElementById('disp-detail').innerText = document.getElementById('in-detail').value;
+        document.getElementById('disp-stadion').innerText = document.getElementById('in-stadion').value;
+        document.getElementById('disp-misto').innerText = document.getElementById('in-misto').value;
+
+        // Nastavení CSS proměnných
+        document.documentElement.style.setProperty('--home-color', homeColor);
+        document.documentElement.style.setProperty('--away-color', awayColor);
+        document.documentElement.style.setProperty('--info-bg', infoColor);
+
+        // Spuštění animace
+        const scene = document.getElementById('scene');
+        const row1 = document.getElementById('row1');
+        const row2 = document.getElementById('row2');
+        
+        scene.classList.add('visible');
+        setTimeout(() => {
+            row1.classList.add('active');
+            row2.classList.add('active');
+        }, 50);
+    }
+
+    function hideIntro() {
+        const row1 = document.getElementById('row1');
+        const row2 = document.getElementById('row2');
+        const scene = document.getElementById('scene');
+        
+        row1.classList.remove('active');
+        row2.classList.remove('active');
+        
+        setTimeout(() => {
+            scene.classList.remove('visible');
+        }, 800);
+    }
+</script>
+
+</body>
+</html>
