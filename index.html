@@ -24,7 +24,6 @@
             overflow-x: hidden;
         }
 
-        /* SCOREBOARD WRAPPER S EFEKTEM */
         #scoreboard-wrapper { 
             width: 100%; 
             max-width: 1100px; 
@@ -33,7 +32,6 @@
             transform-origin: top;
         }
         
-        /* Třída pro schování */
         .hidden-ui { 
             transform: translateY(-200px); 
             opacity: 0; 
@@ -79,7 +77,6 @@
         .mode-so .timer-box, .mode-so .period-box { display: none; }
         .mode-so .so-display { display: flex; }
 
-        /* TRESTY - EXTRA VELKÉ */
         .penalty-area { position: absolute; top: 100%; left: 0; width: 100%; }
         #penalties-home { background-color: var(--bg-home); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
         #penalties-away { background-color: var(--bg-away); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
@@ -95,7 +92,6 @@
             color: white;
         }
 
-        /* ADMIN PANEL */
         .admin-panel {
             background: #1a1a1a;
             padding: 20px;
@@ -162,11 +158,11 @@
             <h3>Systém</h3>
             <button class="btn-hide" onclick="toggleVisibility()">SKRÝT / ZOBRAZIT GRAFIKU</button>
             <div class="period-selector" id="p-selector">
-                <button onclick="setPeriod('1')" class="active">1</button>
-                <button onclick="setPeriod('2')">2</button>
-                <button onclick="setPeriod('3')">3</button>
-                <button onclick="setPeriod('OT')">OT</button>
-                <button onclick="setPeriod('SO')">SO</button>
+                <button onclick="setPeriod('1')" id="btn-1" class="active">1</button>
+                <button onclick="setPeriod('2')" id="btn-2">2</button>
+                <button onclick="setPeriod('3')" id="btn-3">3</button>
+                <button onclick="setPeriod('OT')" id="btn-OT">OT</button>
+                <button onclick="setPeriod('SO')" id="btn-SO">SO</button>
             </div>
             <button id="mainBtn" class="btn-start" onclick="toggleTimer()">START / STOP</button>
             <button id="timeoutBtn" class="btn-timeout" onclick="triggerTimeout()">TIMEOUT (25s)</button>
@@ -220,7 +216,19 @@
     <script>
         let timeLeft = 1200000, isRunning = false, lastTs = 0, isVisible = true;
         let scoreHome = 0, scoreAway = 0, penaltiesHome = [], penaltiesAway = [], soHome = [], soAway = [];
-        let isTimeout = false, savedGameTime = 0;
+        let isTimeout = false, savedGameTime = 0, currentPhase = '1';
+
+        const phases = {
+            '1':  { time: 20, isGame: true,  next: 'P1', disp: '1' },
+            'P1': { time: 15, isGame: false, next: '2',  disp: 'P' },
+            '2':  { time: 20, isGame: true,  next: 'P2', disp: '2' },
+            'P2': { time: 15, isGame: false, next: '3',  disp: 'P' },
+            '3':  { time: 20, isGame: true,  next: 'P3', disp: '3' },
+            'P3': { time: 2.5,isGame: false, next: 'OT', disp: 'P' },
+            'OT': { time: 5,  isGame: true,  next: 'PO', disp: 'OT' },
+            'PO': { time: 2.5,isGame: false, next: 'SO', disp: 'P' },
+            'SO': { time: 0,  isGame: true,  next: '1',  disp: 'SO' }
+        };
 
         function toggleVisibility() {
             isVisible = !isVisible;
@@ -235,15 +243,25 @@
         }
 
         function setPeriod(p) {
-            document.getElementById('disp-period').innerText = p;
+            currentPhase = p;
+            isRunning = false;
+            isTimeout = false;
+            
+            const config = phases[p] || { time: 20, isGame: true, disp: p };
+            document.getElementById('disp-period').innerText = config.disp;
+            timeLeft = config.time * 60 * 1000;
+            
             document.body.className = (p === 'SO') ? 'mode-so' : '';
             const isSO = (p === 'SO');
             document.querySelectorAll('.so-admin-ctrl').forEach(el => el.style.display = isSO ? 'flex' : 'none');
             document.getElementById('so-reset-container').style.display = isSO ? 'block' : 'none';
-            if (p === 'OT') timeLeft = 5 * 60 * 1000;
-            else if (['1','2','3'].includes(p)) timeLeft = 20 * 60 * 1000;
+            
             const btns = document.querySelectorAll('#p-selector button');
-            btns.forEach(btn => btn.classList.toggle('active', btn.innerText === p));
+            btns.forEach(btn => btn.classList.toggle('active', btn.id === 'btn-' + p));
+            
+            document.getElementById('mainBtn').innerText = "START / STOP";
+            document.getElementById('mainBtn').className = "btn-start";
+            
             updateDisplay();
         }
 
@@ -262,21 +280,39 @@
             if (!isRunning) return;
             let d = ts - lastTs; lastTs = ts;
             timeLeft = Math.max(0, timeLeft - d);
-            if (!isTimeout) {
+
+            // Tresty běží jen během hry, ne v timeoutu ani v přestávce
+            if (phases[currentPhase] && phases[currentPhase].isGame && !isTimeout) {
                 [penaltiesHome, penaltiesAway].forEach(l => l.forEach(p => p.remaining -= d));
                 penaltiesHome = penaltiesHome.filter(p => p.remaining > 0);
                 penaltiesAway = penaltiesAway.filter(p => p.remaining > 0);
             }
+
             updateDisplay();
+
             if (timeLeft <= 0) {
-                if (isTimeout) endTimeout();
-                else { isRunning = false; document.getElementById('mainBtn').innerText = "START"; document.getElementById('mainBtn').className = "btn-start"; }
+                isRunning = false;
+                document.getElementById('mainBtn').innerText = "START";
+                document.getElementById('mainBtn').className = "btn-start";
+
+                if (isTimeout) {
+                    endTimeout();
+                } else {
+                    // Přechod na další fázi (přestávka/třetina)
+                    if (phases[currentPhase]) {
+                        let next = phases[currentPhase].next;
+                        setPeriod(next);
+                    }
+                }
             } else { requestAnimationFrame(tick); }
         }
 
         function updateDisplay() {
             let ms = timeLeft;
-            if (ms < 60000 || isTimeout) {
+            const config = phases[currentPhase] || { isGame: true };
+
+            // Setiny: pouze ve hře pod 1 minutu. V přestávkách nikdy.
+            if (config.isGame && ms < 60000 && !isTimeout) {
                 let s = Math.floor(ms / 1000);
                 let d1 = Math.floor((ms % 1000) / 100);
                 document.getElementById('disp-time').innerText = `${s}.${d1}`;
